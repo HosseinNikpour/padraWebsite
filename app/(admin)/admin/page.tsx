@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
 
+
 export default async function AdminPage() {
   const user = await getCurrentUser();
 
@@ -10,11 +11,11 @@ export default async function AdminPage() {
     redirect("/admin/login");
   }
 
-  const permissions = new Set(
-    user.role.permissions.map(
-      (item) => item.permission.code
-    )
-  );
+ const permissions = new Set(
+  user.role.permissions.map(
+    (item: { permission: { code: string } }) => item.permission.code
+  )
+);
 
   const hasPermission = (permission: string) => {
     return permissions.has(permission);

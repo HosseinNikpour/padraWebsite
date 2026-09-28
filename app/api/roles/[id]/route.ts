@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
@@ -35,14 +36,10 @@ export async function PUT(
 
     const body = await request.json();
 
-    const permissionIds = Array.isArray(
-      body.permissionIds
-    )
+    const permissionIds = Array.isArray(body.permissionIds)
       ? body.permissionIds
           .map(Number)
-          .filter((id: number) =>
-            Number.isInteger(id)
-          )
+          .filter((id: number) => Number.isInteger(id))
       : [];
 
     const role = await prisma.role.findUnique({
@@ -58,47 +55,49 @@ export async function PUT(
       );
     }
 
-    const permissions =
-      await prisma.permission.findMany({
-        where: {
-          id: {
-            in: permissionIds,
-          },
-          isActive: true,
+    const permissions = await prisma.permission.findMany({
+      where: {
+        id: {
+          in: permissionIds,
         },
-      });
-
-    await prisma.$transaction(async (tx) => {
-      await tx.rolePermission.deleteMany({
-        where: {
-          roleId,
-        },
-      });
-
-      if (permissions.length > 0) {
-        await tx.rolePermission.createMany({
-          data: permissions.map((permission) => ({
-            roleId,
-            permissionId: permission.id,
-          })),
-          skipDuplicates: true,
-        });
-      }
+        isActive: true,
+      },
     });
 
-    const updatedRole =
-      await prisma.role.findUnique({
-        where: {
-          id: roleId,
-        },
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
+    await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        await tx.rolePermission.deleteMany({
+          where: {
+            roleId,
+          },
+        });
+
+        if (permissions.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permissions.map(
+              (permission: { id: number }) => ({
+                roleId,
+                permissionId: permission.id,
+              })
+            ),
+            skipDuplicates: true,
+          });
+        }
+      }
+    );
+
+    const updatedRole = await prisma.role.findUnique({
+      where: {
+        id: roleId,
+      },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
           },
         },
-      });
+      },
+    });
 
     return NextResponse.json({
       success: true,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
-
+// import type { Permission } from "@prisma/client";
 import "./admin.css";
 
 export default async function AdminLayout({
@@ -16,11 +16,11 @@ export default async function AdminLayout({
     redirect("/admin/login");
   }
 
-  const permissions = new Set(
-    user.role.permissions.map(
-      (item) => item.permission.code
-    )
-  );
+const permissions = new Set(
+  user.role.permissions.map(
+    (item: { permission: { code: string } }) => item.permission.code
+  )
+);
 
   const hasPermission = (permission: string) => {
     return permissions.has(permission);

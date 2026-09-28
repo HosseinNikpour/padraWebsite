@@ -127,12 +127,12 @@ export async function POST(request: Request) {
       },
     });
 
-    const existingKeys = new Set(
-      existing.map(
-        (item) =>
-          `${item.startTime}-${item.endTime}`
-      )
-    );
+ const existingKeys = new Set(
+  existing.map(
+    (item: { startTime: string; endTime: string }) =>
+      `${item.startTime}-${item.endTime}`
+  )
+);
 
     const newSchedules = schedules.filter(
       (schedule) =>
