@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { authorizePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(
@@ -7,14 +6,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authorization = await authorizePermission("schedules.manage");
-    if (!authorization.user) {
-      return NextResponse.json(
-        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
-        { status: authorization.status }
-      );
-    }
-
     const { id } = await params;
 
     const scheduleId = Number(id);
@@ -88,14 +79,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authorization = await authorizePermission("schedules.manage");
-    if (!authorization.user) {
-      return NextResponse.json(
-        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
-        { status: authorization.status }
-      );
-    }
-
     const { id } = await params;
 
     const scheduleId = Number(id);

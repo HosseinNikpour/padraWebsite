@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { authorizePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -36,14 +35,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const authorization = await authorizePermission("schedules.manage");
-    if (!authorization.user) {
-      return NextResponse.json(
-        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
-        { status: authorization.status }
-      );
-    }
-
     const body = await request.json();
 
     const {

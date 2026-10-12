@@ -526,3 +526,42 @@
             justify-content: flex-start;
           }
         }
+
+/* Shared CRUD template integration for games and events */
+.crud-page.games-admin, .crud-page.events-page {
+  min-height: 0; padding: 0; background: transparent; color: var(--crud-text);
+}
+.crud-page.games-admin .games-header, .crud-page.events-page .events-header {
+  max-width: none; margin: 0 0 24px;
+}
+.crud-page.games-admin .game-form-card, .crud-page.games-admin .games-list-section,
+.crud-page.events-page .event-form-card, .crud-page.events-page .events-list-section {
+  width: 100%; max-width: none; margin: 0; padding: 22px;
+  border: 1px solid var(--crud-border); border-radius: var(--crud-radius-card);
+  background: var(--crud-surface); box-shadow: var(--crud-shadow-card);
+}
+.crud-page.games-admin .form-grid, .crud-page.events-page .event-form {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 18px;
+}
+.crud-page.games-admin .form-field.full, .crud-page.events-page .field-full { grid-column: 1 / -1; }
+.crud-page.games-admin .form-field input, .crud-page.games-admin .form-field textarea,
+.crud-page.games-admin .form-field select, .crud-page.events-page .field input,
+.crud-page.events-page .field textarea, .crud-page.events-page .field select {
+  width: 100%; min-width: 0; box-sizing: border-box; border-radius: var(--crud-radius-control);
+}
+.crud-page.games-admin .form-title, .crud-page.events-page .form-title,
+.crud-page.games-admin .list-header, .crud-page.events-page .list-header {
+  margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #edf2f7;
+}
+.crud-page.games-admin .games-list-section, .crud-page.events-page .events-list-section { overflow: hidden; }
+.crud-page.games-admin .games-list-section .game-card, .crud-page.events-page .events-list-section .event-card {
+  border-radius: 12px; border-color: var(--crud-border);
+}
+@media (max-width: 1000px) {
+  .crud-page.games-admin .form-grid, .crud-page.events-page .event-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .crud-page.games-admin .game-form-card, .crud-page.games-admin .games-list-section,
+  .crud-page.events-page .event-form-card, .crud-page.events-page .events-list-section { padding: 16px; }
+  .crud-page.games-admin .form-grid, .crud-page.events-page .event-form { grid-template-columns: minmax(0, 1fr); }
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import "./event.css";
+import "@/components/admin/crud/crud-theme.css";
 
 type EventItem = {
     id: number;
@@ -284,7 +285,7 @@ export default function EventsAdminPage() {
     }
 
     return (
-        <div className="events-page">
+        <div className="crud-page crud-columns--stacked events-page">
             <div className="events-header">
                 <div>
                     <span className="eyebrow">
@@ -309,7 +310,155 @@ export default function EventsAdminPage() {
                 )}
             </div>
 
-            <section className="event-form-card">
+            <section className="events-list-section crud-card">
+                <div className="list-header">
+                    <div>
+                        <h2>ایونت‌های تعریف‌شده</h2>
+
+                        <span>
+                            {events.length.toLocaleString(
+                                "fa-IR"
+                            )}{" "}
+                            ایونت
+                        </span>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="empty-state">
+                        در حال دریافت اطلاعات...
+                    </div>
+                ) : events.length === 0 ? (
+                    <div className="empty-state">
+                        هنوز هیچ ایونتی تعریف نشده است.
+                    </div>
+                ) : (
+                    <div className="events-table">
+                        <div className="table-head">
+                            <span>ایونت</span>
+                            <span>ظرفیت</span>
+                            <span>مدت</span>
+                            <span>اجراها</span>
+                            <span>وضعیت</span>
+                            <span>عملیات</span>
+                        </div>
+
+                        {events.map((event) => (
+                            <div
+                                className="table-row"
+                                key={event.id}
+                            >
+                                <div className="event-info">
+                                    {event.image ? (
+                                        <img
+                                            src={event.image}
+                                            alt={event.title}
+                                            className="event-image"
+                                        />
+                                    ) : (
+                                        <div className="event-placeholder">
+                                            ★
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <strong>
+                                            {event.title}
+                                        </strong>
+
+                                        {event.genre && (
+                                            <span>
+                                                {event.genre}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="table-cell">
+                                    {event.capacity
+                                        ? `${event.capacity.toLocaleString(
+                                              "fa-IR"
+                                          )} نفر`
+                                        : "—"}
+                                </div>
+
+                                <div className="table-cell">
+                                    {event.duration
+                                        ? `${event.duration.toLocaleString(
+                                              "fa-IR"
+                                          )} دقیقه`
+                                        : "—"}
+                                </div>
+
+                                <div className="table-cell">
+                                    {(
+                                        event._count
+                                            ?.occurrences ?? 0
+                                    ).toLocaleString(
+                                        "fa-IR"
+                                    )}
+                                </div>
+
+                                <div>
+                                    <button
+                                        type="button"
+                                        className={`status-badge ${
+                                            event.isActive
+                                                ? "active"
+                                                : "inactive"
+                                        }`}
+                                        onClick={() =>
+                                            toggleActive(
+                                                event
+                                            )
+                                        }
+                                    >
+                                        {event.isActive
+                                            ? "فعال"
+                                            : "غیرفعال"}
+                                    </button>
+                                </div>
+
+                                <div className="row-actions">
+                                    <button
+                                        type="button"
+                                        className="occurrence-button"
+                                        onClick={() =>
+                                            (window.location.href = `/admin/events/${event.id}/occurrences`)
+                                        }
+                                    >
+                                        اجراها
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="edit-button"
+                                        onClick={() =>
+                                            editEvent(event)
+                                        }
+                                    >
+                                        ویرایش
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="delete-button"
+                                        onClick={() =>
+                                            deleteEvent(
+                                                event.id
+                                            )
+                                        }
+                                    >
+                                        حذف
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            <section className="event-form-card crud-card">
                 <div className="form-title">
                     <div>
                         <h2>
@@ -553,154 +702,6 @@ export default function EventsAdminPage() {
                         </button>
                     </div>
                 </div>
-            </section>
-
-            <section className="events-list-section">
-                <div className="list-header">
-                    <div>
-                        <h2>ایونت‌های تعریف‌شده</h2>
-
-                        <span>
-                            {events.length.toLocaleString(
-                                "fa-IR"
-                            )}{" "}
-                            ایونت
-                        </span>
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="empty-state">
-                        در حال دریافت اطلاعات...
-                    </div>
-                ) : events.length === 0 ? (
-                    <div className="empty-state">
-                        هنوز هیچ ایونتی تعریف نشده است.
-                    </div>
-                ) : (
-                    <div className="events-table">
-                        <div className="table-head">
-                            <span>ایونت</span>
-                            <span>ظرفیت</span>
-                            <span>مدت</span>
-                            <span>اجراها</span>
-                            <span>وضعیت</span>
-                            <span>عملیات</span>
-                        </div>
-
-                        {events.map((event) => (
-                            <div
-                                className="table-row"
-                                key={event.id}
-                            >
-                                <div className="event-info">
-                                    {event.image ? (
-                                        <img
-                                            src={event.image}
-                                            alt={event.title}
-                                            className="event-image"
-                                        />
-                                    ) : (
-                                        <div className="event-placeholder">
-                                            ★
-                                        </div>
-                                    )}
-
-                                    <div>
-                                        <strong>
-                                            {event.title}
-                                        </strong>
-
-                                        {event.genre && (
-                                            <span>
-                                                {event.genre}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="table-cell">
-                                    {event.capacity
-                                        ? `${event.capacity.toLocaleString(
-                                              "fa-IR"
-                                          )} نفر`
-                                        : "—"}
-                                </div>
-
-                                <div className="table-cell">
-                                    {event.duration
-                                        ? `${event.duration.toLocaleString(
-                                              "fa-IR"
-                                          )} دقیقه`
-                                        : "—"}
-                                </div>
-
-                                <div className="table-cell">
-                                    {(
-                                        event._count
-                                            ?.occurrences ?? 0
-                                    ).toLocaleString(
-                                        "fa-IR"
-                                    )}
-                                </div>
-
-                                <div>
-                                    <button
-                                        type="button"
-                                        className={`status-badge ${
-                                            event.isActive
-                                                ? "active"
-                                                : "inactive"
-                                        }`}
-                                        onClick={() =>
-                                            toggleActive(
-                                                event
-                                            )
-                                        }
-                                    >
-                                        {event.isActive
-                                            ? "فعال"
-                                            : "غیرفعال"}
-                                    </button>
-                                </div>
-
-                                <div className="row-actions">
-                                    <button
-                                        type="button"
-                                        className="occurrence-button"
-                                        onClick={() =>
-                                            (window.location.href = `/admin/events/${event.id}/occurrences`)
-                                        }
-                                    >
-                                        اجراها
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="edit-button"
-                                        onClick={() =>
-                                            editEvent(event)
-                                        }
-                                    >
-                                        ویرایش
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="delete-button"
-                                        onClick={() =>
-                                            deleteEvent(
-                                                event.id
-                                            )
-                                        }
-                                    >
-                                        حذف
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </section>
         </div>
     );

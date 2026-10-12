@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import "./games.css";
+import "@/components/admin/crud/crud-theme.css";
 
 type Game = {
   id: number;
@@ -290,7 +291,7 @@ export default function GamesAdminPage() {
   }
 
   return (
-    <main className="games-admin">
+    <main className="crud-page crud-columns--stacked games-admin">
 
       <div className="games-header">
         <div>
@@ -310,7 +311,127 @@ export default function GamesAdminPage() {
       </div>
 
 
-      <section className="game-form-card">
+      <section className="games-list-section crud-card">
+
+        <div className="list-header">
+          <div>
+            <h2>بازی‌های ثبت‌شده</h2>
+            <p>
+              لیست بازی‌های موجود در سایت
+            </p>
+          </div>
+        </div>
+
+
+        {loading ? (
+          <div className="empty-box">
+            در حال دریافت بازی‌ها...
+          </div>
+        ) : games.length === 0 ? (
+          <div className="empty-box">
+            هنوز هیچ بازی‌ای ثبت نشده است.
+          </div>
+        ) : (
+          <div className="games-table">
+
+            {games.map((game) => (
+              <article
+                key={game.id}
+                className="game-row"
+              >
+
+                <div className="game-row-image">
+                  {game.image ? (
+                    <img
+                      src={game.image}
+                      alt={game.name}
+                    />
+                  ) : (
+                    <span>✦</span>
+                  )}
+                </div>
+
+
+                <div className="game-row-info">
+
+                  <h3>{game.name}</h3>
+
+                  {game.description && (
+                    <p>{game.description}</p>
+                  )}
+
+                  <div className="game-meta">
+
+                    <span>
+                      ⏱ {game.duration}
+                    </span>
+
+                    <span>
+                      👥 {game.capacity}
+                    </span>
+
+                    <span>
+                      {game.price.toLocaleString("fa-IR")} تومان
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                <div className="game-row-status">
+                  <button
+                    type="button"
+                    className={`status-badge ${
+                      game.isActive
+                        ? "active"
+                        : "inactive"
+                    }`}
+                    onClick={() =>
+                      toggleActive(game)
+                    }
+                  >
+                    {game.isActive
+                      ? "فعال"
+                      : "غیرفعال"}
+                  </button>
+                </div>
+
+
+                <div className="game-row-actions">
+
+                  <button
+                    type="button"
+                    className="edit-button"
+                    onClick={() =>
+                      editGame(game)
+                    }
+                  >
+                    ویرایش
+                  </button>
+
+                  <button
+                    type="button"
+                    className="delete-button"
+                    onClick={() =>
+                      deleteGame(game.id)
+                    }
+                  >
+                    حذف
+                  </button>
+
+                </div>
+
+              </article>
+            ))}
+
+          </div>
+        )}
+
+      </section>
+
+
+      <section className="game-form-card crud-card">
 
         <div className="form-title">
           <div>
@@ -507,126 +628,6 @@ export default function GamesAdminPage() {
           </div>
 
         </form>
-
-      </section>
-
-
-      <section className="games-list-section">
-
-        <div className="list-header">
-          <div>
-            <h2>بازی‌های ثبت‌شده</h2>
-            <p>
-              لیست بازی‌های موجود در سایت
-            </p>
-          </div>
-        </div>
-
-
-        {loading ? (
-          <div className="empty-box">
-            در حال دریافت بازی‌ها...
-          </div>
-        ) : games.length === 0 ? (
-          <div className="empty-box">
-            هنوز هیچ بازی‌ای ثبت نشده است.
-          </div>
-        ) : (
-          <div className="games-table">
-
-            {games.map((game) => (
-              <article
-                key={game.id}
-                className="game-row"
-              >
-
-                <div className="game-row-image">
-                  {game.image ? (
-                    <img
-                      src={game.image}
-                      alt={game.name}
-                    />
-                  ) : (
-                    <span>✦</span>
-                  )}
-                </div>
-
-
-                <div className="game-row-info">
-
-                  <h3>{game.name}</h3>
-
-                  {game.description && (
-                    <p>{game.description}</p>
-                  )}
-
-                  <div className="game-meta">
-
-                    <span>
-                      ⏱ {game.duration}
-                    </span>
-
-                    <span>
-                      👥 {game.capacity}
-                    </span>
-
-                    <span>
-                      {game.price.toLocaleString("fa-IR")} تومان
-                    </span>
-
-                  </div>
-
-                </div>
-
-
-                <div className="game-row-status">
-                  <button
-                    type="button"
-                    className={`status-badge ${
-                      game.isActive
-                        ? "active"
-                        : "inactive"
-                    }`}
-                    onClick={() =>
-                      toggleActive(game)
-                    }
-                  >
-                    {game.isActive
-                      ? "فعال"
-                      : "غیرفعال"}
-                  </button>
-                </div>
-
-
-                <div className="game-row-actions">
-
-                  <button
-                    type="button"
-                    className="edit-button"
-                    onClick={() =>
-                      editGame(game)
-                    }
-                  >
-                    ویرایش
-                  </button>
-
-                  <button
-                    type="button"
-                    className="delete-button"
-                    onClick={() =>
-                      deleteGame(game.id)
-                    }
-                  >
-                    حذف
-                  </button>
-
-                </div>
-
-              </article>
-            ))}
-
-          </div>
-        )}
 
       </section>
 

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { authorizePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -11,14 +10,6 @@ export async function PUT(
   { params }: RouteContext
 ) {
   try {
-    const authorization = await authorizePermission("games.manage");
-    if (!authorization.user) {
-      return NextResponse.json(
-        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
-        { status: authorization.status }
-      );
-    }
-
     const { id } = await params;
     const gameId = Number(id);
 
@@ -113,14 +104,6 @@ export async function DELETE(
   { params }: RouteContext
 ) {
   try {
-    const authorization = await authorizePermission("games.manage");
-    if (!authorization.user) {
-      return NextResponse.json(
-        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
-        { status: authorization.status }
-      );
-    }
-
     const { id } = await params;
     const gameId = Number(id);
 
