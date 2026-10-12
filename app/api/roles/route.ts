@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
+import { authorizePermission } from "@/lib/auth";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
+    const authorization = await authorizePermission("roles.view");
+    if (!authorization.user) {
       return NextResponse.json(
-        { error: "دسترسی غیرمجاز" },
-        { status: 401 }
+        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
+        { status: authorization.status }
       );
     }
 
@@ -54,12 +53,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
+    const authorization = await authorizePermission("roles.manage");
+    if (!authorization.user) {
       return NextResponse.json(
-        { error: "دسترسی غیرمجاز" },
-        { status: 401 }
+        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
+        { status: authorization.status }
       );
     }
 

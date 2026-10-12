@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
+import { authorizePermission } from "@/lib/auth";
 import { put } from "@vercel/blob";
 
 export async function POST(request: Request) {
   try {
+    const authorization = await authorizePermission("menu.manage");
+    if (!authorization.user) {
+      return NextResponse.json(
+        { error: authorization.status === 401 ? "دسترسی غیرمجاز" : "شما مجوز انجام این عملیات را ندارید" },
+        { status: authorization.status }
+      );
+    }
+
     const formData = await request.formData();
 
     const file = formData.get("file");

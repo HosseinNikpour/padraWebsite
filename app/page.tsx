@@ -247,7 +247,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="games-layout">
-            {games.slice(0, 5).map((game, index) => (
+            {games.map((game, index) => (
               <article
                 className="game-card"
                 key={game.id}

@@ -125,3 +125,26 @@ export async function verifyPassword(
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
 }
+
+/**
+ * Authorize an API operation using the permissions assigned to the current user's role.
+ * Returns 401 when there is no valid active session and 403 when the user lacks permission.
+ */
+export async function authorizePermission(permissionCode: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return { user: null, status: 401 as const };
+  }
+
+  const allowed = user.role.permissions.some(
+    ({ permission }) =>
+      permission.isActive && permission.code === permissionCode
+  );
+
+  if (!allowed) {
+    return { user: null, status: 403 as const };
+  }
+
+  return { user, status: null };
+}
