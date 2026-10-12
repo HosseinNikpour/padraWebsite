@@ -22,18 +22,28 @@ export async function PUT(
     const description = String(body.description ?? "").trim();
     const image = body.image ? String(body.image) : null;
 
-    const eventDate = new Date(body.eventDate);
+    const capacity =
+      body.capacity !== null &&
+      body.capacity !== undefined &&
+      body.capacity !== ""
+        ? Number(body.capacity)
+        : null;
 
-    const startTime = body.startTime
-      ? String(body.startTime).trim()
+    const genre = body.genre
+      ? String(body.genre).trim()
       : null;
 
-    const endTime = body.endTime
-      ? String(body.endTime).trim()
-      : null;
+    const duration =
+      body.duration !== null &&
+      body.duration !== undefined &&
+      body.duration !== ""
+        ? Number(body.duration)
+        : null;
 
-    const sortOrder = Number(body.sortOrder ?? 0);
-    const isActive = Boolean(body.isActive);
+    const isActive =
+      body.isActive === undefined
+        ? true
+        : Boolean(body.isActive);
 
     if (!title) {
       return NextResponse.json(
@@ -42,17 +52,36 @@ export async function PUT(
       );
     }
 
-    if (isNaN(eventDate.getTime())) {
+    if (
+      capacity !== null &&
+      (!Number.isFinite(capacity) || capacity <= 0)
+    ) {
       return NextResponse.json(
-        { error: "تاریخ ایونت معتبر نیست" },
+        { error: "ظرفیت ایونت معتبر نیست" },
         { status: 400 }
       );
     }
 
-    if (!Number.isFinite(sortOrder)) {
+    if (
+      duration !== null &&
+      (!Number.isFinite(duration) || duration <= 0)
+    ) {
       return NextResponse.json(
-        { error: "ترتیب نمایش معتبر نیست" },
+        { error: "مدت زمان ایونت معتبر نیست" },
         { status: 400 }
+      );
+    }
+
+    const existingEvent = await prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    });
+
+    if (!existingEvent) {
+      return NextResponse.json(
+        { error: "ایونت پیدا نشد" },
+        { status: 404 }
       );
     }
 
@@ -64,10 +93,9 @@ export async function PUT(
         title,
         description: description || null,
         image,
-        eventDate,
-        startTime,
-        endTime,
-        sortOrder,
+        capacity,
+        genre,
+        duration,
         isActive,
       },
     });
@@ -95,6 +123,19 @@ export async function DELETE(
       return NextResponse.json(
         { error: "شناسه ایونت معتبر نیست" },
         { status: 400 }
+      );
+    }
+
+    const existingEvent = await prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    });
+
+    if (!existingEvent) {
+      return NextResponse.json(
+        { error: "ایونت پیدا نشد" },
+        { status: 404 }
       );
     }
 

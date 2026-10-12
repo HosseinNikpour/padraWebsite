@@ -1,533 +1,1002 @@
-"use client"
+"use client";
 
+import Link from "next/link";
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import "./mainpage.css";
+
+
+type EventOccurrence = {
+  id: number;
+  eventId: number;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  price: number;
+  capacity: number | null;
+  isActive: boolean;
+  sortOrder: number;
+};
 
 type EventItem = {
   id: number;
   title: string;
   description: string | null;
   image: string | null;
-  eventDate: string;
-  startTime: string | null;
-  endTime: string | null;
-  isActive: boolean | true;
+  capacity: number | null;
+  genre: string | null;
+  duration: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+
+  occurrences: EventOccurrence[];
 };
+
+
+
 type GameItem = {
   id: number;
   name: string;
   description: string | null;
   image: string | null;
-  duration: string;
-  capacity: string;
-  price: number;
+  duration: number | null;
+  capacity: number | null;
+  price: number | null;
   sortOrder: number;
   isActive: boolean;
 };
 
-export default function Home() {
-
+export default function HomePage() {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [games, setGames] = useState<GameItem[]>([]);
-  const [gamesLoading, setGamesLoading] = useState(true);
+  //const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingGames, setLoadingGames] = useState(true);
 
   useEffect(() => {
     loadTodayEvents();
     loadGames();
   }, []);
 
+
   async function loadTodayEvents() {
     try {
-      const response = await fetch("/api/events");
+      setLoadingEvents(true);
 
-      if (!response.ok) {
-        throw new Error("خطا در دریافت ایونت‌ها");
-      }
-
-      const data: EventItem[] = await response.json();
-
-      const today = new Date();
-
-      const todayEvents = data.filter((event) => {
-        if (!event.isActive) {
-          return false;
-        }
-
-        const eventDate = new Date(event.eventDate);
-
-        return (
-          eventDate.getFullYear() === today.getFullYear() &&
-          eventDate.getMonth() === today.getMonth() &&
-          eventDate.getDate() === today.getDate()
-        );
+      const res = await fetch("/api/events/today", {
+        cache: "no-store",
       });
 
-      setEvents(todayEvents);
-
-      // اولین ایونت به صورت پیش‌فرض انتخاب شود
-      if (todayEvents.length > 0) {
-        setSelectedEvent(todayEvents[0]);
-      } else {
-        setSelectedEvent(null);
+      if (!res.ok) {
+        throw new Error("Failed to load events");
       }
+
+      const data: EventItem[] = await res.json();
+
+      setEvents(data);
     } catch (error) {
-      console.error("TODAY EVENTS ERROR:", error);
+      console.error("LOAD TODAY EVENTS ERROR:", error);
+
+      setEvents([]);
     } finally {
-      setEventsLoading(false);
+      setLoadingEvents(false);
     }
   }
+
+
+
   async function loadGames() {
     try {
-      setGamesLoading(true);
+      setLoadingGames(true);
 
-      const response = await fetch("/api/games");
+      const res = await fetch("/api/games");
 
-      if (!response.ok) {
-        throw new Error("خطا در دریافت بازی‌ها");
+      if (!res.ok) {
+        throw new Error("Failed to load games");
       }
 
-      const data: GameItem[] = await response.json();
+      const data = await res.json();
 
       const activeGames = data
-        .filter((game) => game.isActive)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
+        .filter((game: GameItem) => game.isActive)
+        .sort(
+          (a: GameItem, b: GameItem) =>
+            (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+        );
 
       setGames(activeGames);
     } catch (error) {
-      console.error("GAMES LOAD ERROR:", error);
+      console.error(error);
+      setGames([]);
     } finally {
-      setGamesLoading(false);
+      setLoadingGames(false);
     }
   }
 
+  function formatPrice(price: number | null) {
+    if (!price) return "استعلام قیمت";
+
+    return `${new Intl.NumberFormat("fa-IR").format(price)} تومان`;
+  }
+
+  function formatDuration(duration: number | null) {
+    if (!duration) return null;
+
+    return `${new Intl.NumberFormat("fa-IR").format(duration)} دقیقه`;
+  }
+
   return (
-    <>
+    <main className="home-page">
       <Header />
 
-      <main>
-        {/* HERO */}
-        <section id="home" className="hero section-anchor">
-          <div className="hero-background">
-             
-            <div className="hero-circle hero-circle-one" />
-            <div className="hero-circle hero-circle-two" />
+      {/* =====================================================
+          HERO
+      ===================================================== */}
+      <section className="hero-section" id="home">
+        <div className="hero-grid"></div>
+        <div className="hero-noise"></div>
+
+        <div className="hero-side-label">
+          <span>PADRA PARK</span>
+          <span>ENTERTAINMENT CENTER</span>
+        </div>
+
+        {/* <div className="hero-number">
+          <span>01</span>
+          <small>/ 05</small>
+        </div> */}
+
+        <div className="hero-content">
+          <div className="hero-kicker">
+            <span className="hero-kicker-line"></span>
+            <span>PLAY · COMPETE · EXPERIENCE</span>
           </div>
 
-          <div className="container hero-container">
-            <div className="hero-content">
-              <p className="eyebrow">PADRA ENTERTAINMENT PARK</p>
+          <h1>
+            بازی فقط
+            <br />
+            <strong>شروع ماجراست.</strong>
+          </h1>
 
-              <h1>
-                اینجا فقط
-                <br />
-                <span>بازی نمی‌کنی.</span>
-                <br />
-                تجربه می‌سازی.
-              </h1>
+          <p>
+            جایی برای رقابت، هیجان، خنده و ساختن یک شب متفاوت.
+          </p>
 
-              <p className="hero-description">
-                مجموعه‌ای متفاوت برای بازی، رقابت، هیجان و ساختن
-                خاطراتی که ارزش تکرار دارند.
-              </p>
+          {/* <div className="hero-actions">
+            <Link href="/booking" className="primary-action">
+              <span>رزرو بازی</span>
+              <span className="action-arrow">↗</span>
+            </Link>
 
-              <div className="hero-actions">
-                <a href="#games" className="button button-primary">
-                  بازی‌ها را ببین
-                </a>
+            <a href="#games" className="secondary-action">
+              دیدن بازی‌ها
+            </a>
+          </div> */}
+        </div>
 
-                <a href="#events" className="button button-secondary">
-                  برگزاری ایونت
-                </a>
-              </div>
-            </div>
+        <div className="hero-visual">
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          >
+            <source src="/img/safine.mp4" type="video/mp4" />
+          </video>
 
-            <div className="hero-visual">
-              <div className="hero-card">
-                 <img src="/img/padra_logo.png" alt="پادرا"   width={180}    height={300}   style={{ marginTop: "39px",marginRight: "91px"  }}/>
-                {/* <div className="hero-card-top">
-                  <span>PADRA</span>
-                  <span>01 — 05</span>
-                </div> */}
+          <div className="hero-image-overlay"></div>
 
-                <div className="hero-card-center">
-                  <strong>PLAY</strong>
-                  <span>COMPETE</span>
-                  <span>EXPERIENCE</span>
-                </div>
-
-                <div className="hero-card-bottom">
-                  <span>ENTERTAINMENT</span>
-                  <span>TEHRAN</span>
-                </div>
-              </div>
-            </div>
+          <div className="hero-image-caption">
+            <span>FEATURED EXPERIENCE</span>
+            <strong>PADRA PARK</strong>
           </div>
 
-          <div className="hero-scroll">SCROLL ↓</div>
-        </section>
+          <div className="hero-corner top-left"></div>
+          <div className="hero-corner bottom-right"></div>
+        </div>
 
-        {/* today */}
-        <section className="today-section">
-          <div className="today-header">
-            <span className="section-eyebrow">
-              TODAY AT PADRA
-            </span>
-
-            <h2>امروز در پادرا چه خبره؟</h2>
-
-            <p>
-              برنامه‌ها و اتفاقات امروز پادرا
-            </p>
+        {/* <div className="hero-bottom">
+          <div>
+            <span>LOCATION</span>
+            <strong>تهران · پونک</strong>
           </div>
 
-          {eventsLoading ? (
-            <div className="today-loading">
-              در حال دریافت برنامه‌های امروز...
-            </div>
-          ) : events.length === 0 ? (
-            <div className="today-empty">
-              <div className="today-empty-icon">✦</div>
+          <div>
+            <span>EXPERIENCES</span>
+            <strong>{games.length || 5} بازی</strong>
+          </div>
 
-              <h3>امروز برنامه‌ای نداریم</h3>
+          <div>
+            <span>BOOKING</span>
+            <strong>ONLINE</strong>
+          </div>
 
-              <p>
-                برای اطلاع از برنامه‌های جدید پادرا دوباره سر بزنید.
-              </p>
-            </div>
-          ) : (
-            <div className="today-events-layout">
+          <div className="hero-scroll">
+            <span>SCROLL</span>
+            <i></i>
+          </div>
+        </div> */}
+      </section>
 
-              {/* LEFT — Timeline */}
-              <div className="today-events-list">
-                <div className="events-list-line" />
 
-                {events.map((event) => {
-                  const isSelected = selectedEvent?.id === event.id;
+      {/* =====================================================
+          GAMES
+      ===================================================== */}
+      <section className="games-section" id="games">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">THE EXPERIENCES</span>
+            <h2>
+              انتخاب کن.
+              <br />
+              <strong>بازی شروع میشه.</strong>
+            </h2>
+          </div>
 
-                  return (
-                    <button
-                      key={event.id}
-                      type="button"
-                      className={`event-timeline-item ${isSelected ? "selected" : ""
-                        }`}
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      <div className="event-timeline-dot">
-                        <span />
+          {/* <div className="section-index">02</div> */}
+        </div>
+
+        {loadingGames ? (
+          <div className="games-loading">در حال بارگذاری بازی‌ها...</div>
+        ) : games.length === 0 ? (
+          <div className="games-empty">
+            در حال آماده‌سازی تجربه‌های پادرا هستیم.
+          </div>
+        ) : (
+          <div className="games-layout">
+            {games.slice(0, 5).map((game, index) => (
+              <article
+                className="game-card"
+                key={game.id}
+              >
+                <Link
+                  href={`/booking?gameId=${game.id}`}
+                  className="game-card-link"
+                >
+                  <div className="game-card-image-wrap">
+                    {game.image ? (
+                      <img
+                        src={game.image}
+                        alt={game.name}
+                        className="game-card-image"
+                      />
+                    ) : (
+                      <div className="game-card-placeholder">
+                        <span>{String(index + 1).padStart(2, "0")}</span>
                       </div>
+                    )}
 
-                      <div className="event-timeline-info">
-                        <div className="event-timeline-time">
-                          {event.startTime || "امروز"}
+                    <div className="game-card-image-overlay"></div>
 
-                          {event.endTime && (
-                            <> — {event.endTime}</>
-                          )}
-                        </div>
-
-                        <h3>{event.title}</h3>
-
-                        {event.description && (
-                          <p>{event.description}</p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* RIGHT — Selected Event */}
-              <div className="today-event-detail">
-                {selectedEvent && (
-                  <>
-                    <div className="event-detail-image">
-                      {selectedEvent.image ? (
-                        <img
-                          src={selectedEvent.image}
-                          alt={selectedEvent.title}
-                        />
-                      ) : (
-                        <div className="event-detail-placeholder">
-                          <span>✦</span>
-                          <p>PADRA</p>
-                        </div>
-                      )}
+                    <div className="game-number">
+                      {String(index + 1).padStart(2, "0")}
                     </div>
 
-                    <div className="event-detail-content">
-
-                      <div className="event-detail-meta">
-                        <span>
-                          {selectedEvent.startTime || "امروز"}
-
-                          {selectedEvent.endTime && (
-                            <> — {selectedEvent.endTime}</>
-                          )}
-                        </span>
-                      </div>
-
-                      <h3>{selectedEvent.title}</h3>
-
-                      {selectedEvent.description && (
-                        <p>{selectedEvent.description}</p>
-                      )}
-
+                    <div className="game-card-top">
+                      <span>EXPERIENCE</span>
+                      <span>↗</span>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
 
-            </div>
-          )}
-        </section>
-
-        {/* GAMES */}
-        <section
-          id="games"
-          className="section games-section section-anchor"
-        >
-          <div className="container">
-
-            <div className="section-heading">
-              <div>
-                <p className="section-label">OUR GAMES</p>
-
-                <h2>
-                  بازی‌هایی برای <span>رقابت</span> و <span>همکاری</span>
-                </h2>
-              </div>
-
-              <p>
-                هر بازی یک تجربه متفاوت است؛
-                <br />
-                انتخاب کن و آماده رقابت شو.
-              </p>
-            </div>
-
-
-            {gamesLoading ? (
-              <div className="games-loading">
-                در حال دریافت بازی‌ها...
-              </div>
-            ) : games.length === 0 ? (
-              <div className="games-empty">
-                در حال حاضر بازی‌ای برای نمایش وجود ندارد.
-              </div>
-            ) : (
-              <div className="games-grid">
-
-                {games.map((game) => (
-                  <article
-                    className="game-card"
-                    key={game.id}
-                  >
-
-                    <div className="game-image">
-
-                      {game.image ? (
-                        <img
-                          src={game.image}
-                          alt={game.name}
-                        />
-                      ) : (
-                        <span>
-                          {game.name}
-                        </span>
-                      )}
-
-                    </div>
-
-
-                    <div className="game-card-content">
-
+                  <div className="game-card-content">
+                    <div className="game-title-row">
                       <h3>{game.name}</h3>
-
-                      {game.description && (
-                        <p>{game.description}</p>
-                      )}
-
-
-                      <div className="game-details">
-
-                        <span>
-                          <small>مدت</small>
-                          {game.duration}
-                        </span>
-
-                        <span>
-                          <small>ظرفیت</small>
-                          {game.capacity}
-                        </span>
-
-                        <span>
-                          <small>قیمت</small>
-                          {game.price.toLocaleString("fa-IR")} تومان
-                        </span>
-
-                      </div>
-
+                      <span className="game-arrow">↗</span>
                     </div>
 
+                    {game.description && (
+                      <p>{game.description}</p>
+                    )}
 
-                    <a
-                       href={`/booking?gameId=${game.id}`}
-                      className="game-button"
-                    >
-                      رزرو نوبت
-                      <span>←</span>
-                    </a>
+                    <div className="game-meta">
+                      {game.duration && (
+                        <span>
+                          <b>مدت</b>
+                          {(game.duration)}
+                        </span>
+                      )}
 
-                  </article>
-                ))}
+                      {game.capacity && (
+                        <span>
+                          <b>تعداد بازیکن</b>
+                          {(game.capacity)}
+                        </span>
+                      )}
 
-              </div>
-            )}
-
+                      {game.price && (
+                        <span>
+                          <b>قیمت</b>
+                          {formatPrice(game.price)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </article>
+            ))}
           </div>
-        </section>
+        )}
+      </section>
 
+      {/* =====================================================
+          TODAY
+      ===================================================== */}
+      <section className="today-section" id="today">
+        <div className="today-background-grid"></div>
 
-
-        {/* CAFE */}
-        <section id="cafe" className="section cafe-section section-anchor">
-          <div className="container cafe-grid">
-            <div className="cafe-visual">
-              <div className="cafe-placeholder">
-                <span>CAFE</span>
-                <strong>PADRA</strong>
-              </div>
-            </div>
-
-            <div className="cafe-content">
-              <p className="section-label">03 / CAFE</p>
-
-              <h2>
-                بعد از بازی،
-                <br />
-                <span>وقت کافه است.</span>
-              </h2>
-
-              <p>
-                یک فضای راحت برای استراحت، تماشای مسابقه، بازی و
-                دورهمی با دوستان.
-              </p>
-
-              <div className="feature-list">
-                <div>
-                  <span>01</span>
-                  <strong>کافه</strong>
-                </div>
-
-                <div>
-                  <span>02</span>
-                  <strong>نمایش مسابقات</strong>
-                </div>
-
-                <div>
-                  <span>03</span>
-                  <strong>بازی و دورهمی</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* EVENTS */}
-        <section id="birthday" className="section events-section section-anchor">
-          <div className="container">
-            <div className="events-content">
-              <p className="section-label">04 / EVENTS</p>
-
-              <h2>
-                تولد،
-                <br />
-                ایونت،
-                <br />
-                <span>یا یک دورهمی متفاوت.</span>
-              </h2>
-
-              <p>
-                برای گروه دوستان، تیم‌های کاری، جشن تولد و هر مناسبتی
-                که می‌خواهی متفاوت برگزار شود.
-              </p>
-
-              <a href="#contact" className="button button-primary">
-                هماهنگی ایونت
-              </a>
-            </div>
-
-            <div className="events-box">
-              <div>EVENT</div>
-              <strong>MAKE<br />IT<br />DIFFERENT.</strong>
-            </div>
-          </div>
-        </section>
-
-        {/* ABOUT */}
-        <section id="about" className="section about-section section-anchor">
-          <div className="container about-grid">
-            <div>
-              <p className="section-label">05 / ABOUT</p>
-              <h2>
-                پادرا
-                <br />
-                یعنی <span>تجربه.</span>
-              </h2>
-            </div>
-
-            <div className="about-text">
-              <p>
-                ما پادرا را برای آدم‌هایی ساختیم که دوست دارند وقت
-                آزادشان را جور دیگری بگذرانند.
-              </p>
-
-              <p>
-                از رقابت و بازی گرفته تا کافه و دورهمی؛ همه چیز در
-                پادرا برای ساختن یک تجربه خوب کنار هم قرار گرفته است.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* CONTACT */}
-        <section id="contact" className="section contact-section section-anchor">
-          <div className="container contact-container">
-            <p className="section-label">06 / CONTACT</p>
+        <div className="today-header">
+          <div className="today-header-title">
+            <span className="eyebrow">LIVE AT PADRA</span>
 
             <h2>
-              آماده‌ای
-              <br />
-              <span>بازی کنیم؟</span>
+              امروز چه خبره؟
             </h2>
 
             <p>
-              برای رزرو، برگزاری ایونت و اطلاعات بیشتر با ما در ارتباط
-              باشید.
+              برنامه‌ها و ایونت‌های امروز پادرا را ببین.
+            </p>
+          </div>
+
+          <div className="today-date">
+            <span>امروز</span>
+
+            <strong>
+              {new Intl.DateTimeFormat("fa-IR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              }).format(new Date())}
+            </strong>
+          </div>
+        </div>
+
+        {loadingEvents ? (
+          <div className="today-loading">
+            در حال بررسی برنامه امروز...
+          </div>
+        ) : events.length === 0 ? (
+          <div className="today-empty">
+            <div className="empty-icon">+</div>
+
+            <h3>امروز برنامه ویژه‌ای نداریم.</h3>
+
+            <p>
+              ولی بازی‌ها همیشه آماده‌اند.
+            </p>
+          </div>
+        ) : (
+          <div className="today-editorial">
+            {events.map((event, index) => {
+              const occurrences = event.occurrences ?? [];
+
+              return (
+                <article
+                  key={event.id}
+                  className="today-editorial-row"
+                >
+                  {/* شماره و دسته‌بندی */}
+                  <div className="today-editorial-index">
+                    <span>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+
+                    <small>
+                      {event.genre || "EVENT"}
+                    </small>
+                  </div>
+
+                  {/* اطلاعات ایونت */}
+                  <div className="today-editorial-info">
+                    <h3>{event.title}</h3>
+
+                    {event.description && (
+                      <p>{event.description}</p>
+                    )}
+
+                    {event.duration && (
+                      <div className="today-editorial-duration">
+                        <span>مدت</span>
+                        <strong>{event.duration} دقیقه</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* تصویر */}
+                  <div className="today-editorial-image">
+                    {event.image ? (
+                      <img
+                        src={event.image}
+                        alt={event.title}
+                      />
+                    ) : (
+                      <div className="today-editorial-image-placeholder">
+                        <span>PADRA</span>
+                        <strong>EVENT</strong>
+                      </div>
+                    )}
+
+                    <div className="today-editorial-image-overlay"></div>
+                  </div>
+
+                  {/* سانس‌ها */}
+                  <div className="today-editorial-schedule">
+                    <div className="schedule-heading">
+                      <span>سانس‌های امروز</span>
+                    </div>
+
+                    {occurrences.length > 0 ? (
+                      <div className="schedule-times">
+                        {occurrences.map((occurrence) => (
+                          <div
+                            key={occurrence.id}
+                            className="schedule-time"
+                          >
+                            <div className="schedule-time-main">
+                              <strong>
+                                {occurrence.startTime}
+                              </strong>
+
+                              <span>
+                                {occurrence.endTime}
+                              </span>
+                            </div>
+
+                            {occurrence.price > 0 && (
+                              <small>
+                                {new Intl.NumberFormat("fa-IR").format(
+                                  occurrence.price
+                                )} تومان
+                              </small>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="schedule-empty">
+                        <span>—</span>
+                        <p>امروز بدون سانس</p>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+      {/* =====================================================
+          PADRA cafe
+      ===================================================== */}
+
+      <section className="cafe-section" id="cafe">
+        <div className="cafe-bg-shape cafe-bg-shape-one"></div>
+        <div className="cafe-bg-shape cafe-bg-shape-two"></div>
+
+        <div className="cafe-container">
+
+          {/* معرفی کافه */}
+          <div className="cafe-intro">
+            <span className="cafe-eyebrow">
+              CAFE AT PADRA
+            </span>
+
+            <h2>
+              یک مکث خوب،
+              <br />
+              وسط یک روز <strong>هیجان‌انگیز.</strong>
+            </h2>
+
+            <p>
+              بعد از بازی، وقتشه کمی آروم‌تر بشی.
+              یک نوشیدنی خوش‌طعم، یک میز راحت
+              و چند دقیقه دور از شلوغی.
             </p>
 
-            <div className="contact-actions">
-              <a href="#games" className="button button-primary">
-                مشاهده بازی‌ها
+            <div className="cafe-actions">
+              <a href="menu" className="cafe-button cafe-button-primary">
+                منوی کافه
+                <span>↗</span>
               </a>
 
-              <a href="#home" className="button button-secondary">
-                بازگشت به بالا ↑
+              <a href="#" className="cafe-button cafe-button-secondary">
+                رزرو میز
+                <span>↗</span>
               </a>
             </div>
-          </div>
-        </section>
-      </main>
 
-      <footer className="footer">
-        <div className="container footer-inner">
-          <strong>PADRA</strong>
-          <span>PLAY · COMPETE · EXPERIENCE</span>
-          <span>© 2026 PADRA</span>
+            {/* دو عکس کوچک منو */}
+            <div className="cafe-menu-preview">
+
+              <a href="menu" className="cafe-menu-item">
+                <div className="cafe-menu-image">
+                  <img
+                    src="/img/CafeMenu.gif"
+                    alt="نوشیدنی کافه"
+                  />
+                </div>
+
+                <div className="cafe-menu-overlay">
+                  <div>
+                    <strong>نوشیدنی‌ها</strong>
+                    <span>HOT & COLD DRINKS</span>
+                  </div>
+
+                  <span className="cafe-menu-arrow">↗</span>
+                </div>
+              </a>
+
+              <a href="#menu" className="cafe-menu-item">
+                <div className="cafe-menu-image">
+                  <img
+                    src="/img/CafeMenu2.gif"
+                    alt="دسر"
+                  />
+                </div>
+
+                <div className="cafe-menu-overlay">
+                  <div>
+                    <strong>دسر و میان‌وعده</strong>
+                    <span>SNACKS</span>
+                  </div>
+
+                  <span className="cafe-menu-arrow">↗</span>
+                </div>
+              </a>
+
+            </div>
+          </div>
+
+
+          {/* عکس بزرگ کافه */}
+          <div className="cafe-visual">
+
+            <img
+              src="/img/cafe.gif"
+              alt="کافه پادرا"
+            />
+
+            <div className="cafe-visual-overlay"></div>
+
+            <div className="cafe-visual-label">
+              <span>PADRA</span>
+              <strong>CAFE</strong>
+            </div>
+
+            <div className="cafe-visual-note">
+              Good Food
+              <br />
+              Good Vibes
+            </div>
+
+          </div>
+
         </div>
-      </footer>
-    </>
+
+
+        {/* ویژگی‌های کافه */}
+        <div className="cafe-features">
+
+          <div className="cafe-feature">
+            <div className="cafe-feature-icon">☕</div>
+
+            <div>
+              <strong>قهوه و نوشیدنی</strong>
+              <span>از اسپرسو تا نوشیدنی‌های ویژه</span>
+            </div>
+          </div>
+
+          <div className="cafe-feature">
+            <div className="cafe-feature-icon">◯</div>
+
+            <div>
+              <strong>فضای راحت</strong>
+              <span>مبلمان مدرن و دنج</span>
+            </div>
+          </div>
+
+          <div className="cafe-feature">
+            <div className="cafe-feature-icon">▣</div>
+
+            <div>
+              <strong>تماشای مسابقات</strong>
+              <span>روی پرده بزرگ پادرا</span>
+            </div>
+          </div>
+
+          <div className="cafe-feature">
+            <div className="cafe-feature-icon">♧</div>
+
+            <div>
+              <strong>دورهمی و گفتگو</strong>
+              <span>با دوستان، خانواده و همکاران</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* =====================================================
+          EVENTS / BIRTHDAY
+      ===================================================== */}
+      {/* <section className="events-section">
+        <div className="events-title">
+          <span className="eyebrow">MAKE IT A NIGHT</span>
+
+          <h2>
+            تولد؟
+            <br />
+            <strong>دورهمی؟</strong>
+          </h2>
+
+          <p>
+            وقتی قرار نیست یه شب معمولی داشته باشی،
+            پادرا رو انتخاب کن.
+          </p>
+
+          <a href="tel:02100000000" className="text-action">
+            هماهنگی و رزرو
+            <span>↗</span>
+          </a>
+        </div>
+
+        <div className="events-collage">
+          <div className="collage-card collage-main">
+            {games[2]?.image ? (
+              <img src={games[2].image} alt="Birthday" />
+            ) : (
+              <div className="collage-placeholder">
+                <span>BIRTHDAY</span>
+              </div>
+            )}
+
+            <div className="collage-overlay"></div>
+
+            <div className="collage-caption">
+              <span>01</span>
+              <strong>BIRTHDAY</strong>
+            </div>
+          </div>
+
+          <div className="collage-card collage-small">
+            {games[3]?.image ? (
+              <img src={games[3].image} alt="Group Event" />
+            ) : (
+              <div className="collage-placeholder">
+                <span>EVENT</span>
+              </div>
+            )}
+
+            <div className="collage-caption">
+              <span>02</span>
+              <strong>GROUPS</strong>
+            </div>
+          </div>
+
+          <div className="collage-note">
+            <span>YOUR PEOPLE.</span>
+            <strong>YOUR NIGHT.</strong>
+          </div>
+        </div>
+      </section> */}
+
+      {/* =====================================================
+          BIRTHDAY
+      ===================================================== */}
+      <section className="birthday-section" id="birthday">
+
+        <div className="birthday-bg-number">
+          24
+        </div>
+
+        <div className="birthday-container">
+
+          {/* HEADER */}
+          <div className="birthday-heading">
+
+            <span className="birthday-eyebrow">
+              BIRTHDAYS AT PADRA
+            </span>
+
+            <h2>
+              اینجا فقط
+
+              <strong>  تولد نمی‌گیریم.</strong>
+            </h2>
+
+            <p>
+              یه روز معمولی رو تبدیل کن به یه خاطره‌ای
+              که همه دوست دارن دوباره تعریفش کنن.
+            </p>
+
+          </div>
+
+
+          {/* PHOTO STORY */}
+          <div className="birthday-story">
+
+            {/* عکس کوچک */}
+            <div className="birthday-photo birthday-photo-small">
+              <img
+                src="/img/birthday2.gif"
+                alt="جشن تولد در پادرا"
+              />
+
+              <span className="birthday-photo-label">
+                THE MOMENT
+              </span>
+            </div>
+
+
+            {/* عکس اصلی */}
+            <div className="birthday-photo birthday-photo-main">
+
+              <img
+                src="/img/birthday3.gif"
+                alt="تولد در پادرا پارک"
+              />
+
+              <div className="birthday-photo-overlay"></div>
+
+              <div className="birthday-photo-caption">
+                <span>01 / 04</span>
+
+                <strong>
+                  یک روز،
+                  <br />
+                  کلی خاطره.
+                </strong>
+              </div>
+
+            </div>
+
+
+            {/* عکس سوم */}
+            <div className="birthday-photo birthday-photo-third">
+              <img
+                src="/img/birthday1.gif"
+                alt="جشن تولد پادرا"
+              />
+            </div>
+
+          </div>
+
+
+          {/* EXPERIENCE STRIP */}
+          <div className="birthday-experience">
+
+            <div className="birthday-experience-title">
+              <span>YOUR DAY</span>
+              <strong>همه‌چیز برای یک روز متفاوت</strong>
+            </div>
+
+            <div className="birthday-experience-items">
+
+              <div className="birthday-experience-item">
+                <span>01</span>
+                <strong>بازی</strong>
+                <small>
+                  هیجان برای همه
+                </small>
+              </div>
+
+              <div className="birthday-experience-item">
+                <span>02</span>
+                <strong>کیک</strong>
+                <small>
+                  جشن بدون کیک نمی‌شه
+                </small>
+              </div>
+
+              <div className="birthday-experience-item">
+                <span>03</span>
+                <strong>عکس و فیلم</strong>
+                <small>
+                  لحظه‌ها رو نگه دار
+                </small>
+              </div>
+
+              <div className="birthday-experience-item">
+                <span>04</span>
+                <strong>کافه</strong>
+                <small>
+                  دورهمی بعد از بازی
+                </small>
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* BOTTOM CTA */}
+          <div className="birthday-bottom">
+
+            <div>
+              <span>
+                READY TO CELEBRATE?
+              </span>
+
+              <h3>
+                تولدت رو
+                <strong> پادرا‌یی کن.</strong>
+              </h3>
+            </div>
+
+            <a
+              href="#booking"
+              className="birthday-cta"
+            >
+              اطلاعات تولد
+              <span>↗</span>
+            </a>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* =====================================================
+          ABOUT
+      ===================================================== */}
+
+      <section className="about-section" id="about">
+
+        <div className="about-bg-text">
+          PADRA
+        </div>
+
+        <div className="about-container">
+
+          {/* HEADER */}
+          <div className="about-header">
+
+            <div className="about-label">
+              <span></span>
+              ABOUT PADRA
+            </div>
+
+            <div className="about-header-number">
+              {/* 04 */}
+            </div>
+
+          </div>
+
+
+          {/* MAIN CONTENT */}
+          <div className="about-main">
+
+            {/* TEXT */}
+            <div className="about-copy">
+
+              <h2>
+                پادرا فقط
+                <br />
+                <strong>یک جای بازی نیست.</strong>
+              </h2>
+
+              <p className="about-lead">
+                ما پادرا را ساختیم برای آدم‌هایی که
+                می‌خواهند چند ساعت از روزمرگی فاصله
+                بگیرند، بازی کنند، بخندند و کنار هم
+                یک تجربه متفاوت بسازند.
+              </p>
+
+              <p>
+                از بازی‌های گروهی و هیجان‌انگیز گرفته
+                تا کافه، ایونت، تولد و دورهمی؛
+                پادرا جایی است که قرار نیست فقط
+                یک سرگرمی را تجربه کنی.
+              </p>
+
+              <p>
+                اینجا قرار است با آدم‌هایی که دوستشان
+                داری وقت بگذرانی و چیزی برای تعریف
+                کردن با خودت به خانه ببری.
+              </p>
+
+              {/* <a
+                href="#contact"
+                className="about-link"
+              >
+                بیشتر درباره پادرا
+                <span>↗</span>
+              </a> */}
+
+            </div>
+
+
+            {/* VISUAL */}
+            <div className="about-visual">
+
+              <img
+                src="/img/about/padra-about.jpg"
+                alt="پادرا پارک"
+              />
+
+              <div className="about-visual-overlay"></div>
+
+              <div className="about-visual-top">
+                <span>EST.</span>
+                <strong>PADRA</strong>
+              </div>
+
+              <div className="about-visual-bottom">
+                <span>PLAY</span>
+                <span>CONNECT</span>
+                <span>REMEMBER</span>
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* NUMBERS */}
+          <div className="about-numbers">
+
+            <div className="about-number-item">
+              <strong>05</strong>
+
+              <div>
+                <span>EXPERIENCES</span>
+                <p>تجربه متفاوت برای بازی</p>
+              </div>
+            </div>
+
+
+            <div className="about-number-item">
+              <strong>11+</strong>
+
+              <div>
+                <span>PEOPLE</span>
+                <p>یک تیم برای ساختن تجربه بهتر</p>
+              </div>
+            </div>
+
+
+            <div className="about-number-item">
+              <strong>01</strong>
+
+              <div>
+                <span>PLACE</span>
+                <p>یک مقصد برای چند ساعت خوش</p>
+              </div>
+            </div>
+
+
+            <div className="about-number-item about-number-highlight">
+              <strong>∞</strong>
+
+              <div>
+                <span>MEMORIES</span>
+                <p>خاطره‌هایی که می‌مانند</p>
+              </div>
+            </div>
+
+          </div>
+
+
+          {/* BOTTOM STATEMENT */}
+          <div className="about-statement">
+
+            <span>THE PADRA IDEA</span>
+
+            <h3>
+              بازی شروع ماست،
+              <br />
+              <strong>اما داستان همین‌جا تمام نمی‌شود.</strong>
+            </h3>
+
+          </div>
+
+        </div>
+      </section>
+
+
+    </main>
   );
 }

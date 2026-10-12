@@ -4,12 +4,13 @@ import { useState } from "react";
 
 const menuItems = [
   { label: "خانه", href: "#home" },
-  { label: "امروز چه خبر", href: "#today" },
+  
   { label: "بازی‌ها", href: "#games" },
+  { label: "ایونت ها", href: "#today" },
   { label: "کافه", href: "#cafe" },
   { label: "تولد", href: "#birthday" },
-  { label: "جام و لیگ", href: "#cup" },
-  { label: "آرشیو عکس و فیلم", href: "#archive" },
+  // { label: "جام و لیگ", href: "#cup" },
+  // { label: "آرشیو عکس و فیلم", href: "#archive" },
   { label: "درباره ما", href: "#about" },
 
 ];
@@ -92,34 +93,32 @@ export default function Header() {
         <div className="header-icons">
 
           <a
-            href="#"
+            href="https://www.instagram.com/padrapark.hamila?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw=="
             className="header-icon"
             aria-label="اینستاگرام"
+            target="_blank"  rel="noopener noreferrer"
           >
             <InstagramIcon />
           </a>
 
           <a
-            href="#"
+            href="https://t.me/padraEvents"
             className="header-icon"
             aria-label="تلگرام"
+            target="_blank"  rel="noopener noreferrer"
           >
             <TelegramIcon />
           </a>
 
           <a
-            href="#contact"
+            href="tel:09386620999"
             className="header-icon"
-            aria-label="تماس با پادرا"
+            aria-label="تلفن"
           >
             <PhoneIcon />
           </a>
 
-          <a
-            href="#contact"
-            className="header-icon"
-            aria-label="آدرس پادرا"
-          >
+          <a href="https://nshn.ir/b9_bv2vAQxM5Xs" aria-label="آدرس" target="_blank"  rel="noopener noreferrer" className="header-icon">
             <MapPinIcon />
           </a>
  <a
@@ -144,7 +143,7 @@ export default function Header() {
 
       </div>
 
-      {open && (
+      {/* {open && (
         <nav className="mobile-nav">
 
           {menuItems.map((item) => (
@@ -178,7 +177,7 @@ export default function Header() {
           </div>
 
         </nav>
-      )}
+      )} */}
     </header>
   );
 }

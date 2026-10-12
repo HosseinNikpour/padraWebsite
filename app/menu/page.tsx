@@ -21,9 +21,7 @@ type MenuCategory = {
 
 export default function MenuPage() {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [activeCategory, setActiveCategory] = useState<number | null>(
-    null
-  );
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,7 +33,7 @@ export default function MenuPage() {
       const response = await fetch("/api/menu");
 
       if (!response.ok) {
-        throw new Error();
+        throw new Error("خطا در دریافت منو");
       }
 
       const data = await response.json();
@@ -59,9 +57,9 @@ export default function MenuPage() {
   if (loading) {
     return (
       <main className="menu-page" dir="rtl">
-        <div className="loading">
-          <div className="spinner" />
-          <span>در حال دریافت منو...</span>
+        <div className="menu-loading">
+          <div className="loading-dot" />
+          <span>در حال آماده‌سازی منو</span>
         </div>
       </main>
     );
@@ -70,30 +68,35 @@ export default function MenuPage() {
   return (
     <main className="menu-page" dir="rtl">
       {/* Header */}
-
       <header className="menu-header">
-        <div className="header-content">
-          <div className="logo">
-            <div className="logo-mark">P</div>
+        <div className="menu-brand">
+          <div className="brand-symbol">P</div>
 
-            <div>
-              <strong>پادراپارک</strong>
-              <span>کافه پادرا</span>
-            </div>
-          </div>
-
-          <div className="header-title">
-            <span>منوی کافه</span>
+          <div className="brand-text">
+            <strong>پادرا</strong>
+            <span>CAFE</span>
           </div>
         </div>
+
+        <div className="header-label">MENU</div>
       </header>
 
-      {/* Category Navigation */}
+      {/* Intro */}
+      <section className="menu-intro">
+        <span>کافه پادرا</span>
 
+        <h1>
+          چیزی برای
+          <br />
+          <strong>حال خوب.</strong>
+        </h1>
+      </section>
+
+      {/* Categories */}
       {categories.length > 0 && (
         <nav className="category-nav">
           <div className="category-scroll">
-            {categories.map((category) => (
+            {categories.map((category, index) => (
               <button
                 key={category.id}
                 className={
@@ -101,95 +104,74 @@ export default function MenuPage() {
                     ? "category-button active"
                     : "category-button"
                 }
-                onClick={() =>
-                  setActiveCategory(category.id)
-                }
+                onClick={() => setActiveCategory(category.id)}
               >
-                {category.name}
+                <span className="category-number">
+                  {(index + 1).toString().padStart(2, "0")}
+                </span>
+
+                <span>{category.name}</span>
               </button>
             ))}
           </div>
         </nav>
       )}
 
-      {/* Content */}
-
+      {/* Menu */}
       <section className="menu-content">
         {currentCategory && (
           <>
-            <div className="category-title">
-              <div className="title-line" />
-
+            <div className="category-heading">
               <div>
-                <h1>{currentCategory.name}</h1>
-                <span>
-                  {currentCategory.items.length.toLocaleString(
-                    "fa-IR"
-                  )}{" "}
-                  آیتم
-                </span>
+                <span className="category-eyebrow">CATEGORY</span>
+
+                <h2>{currentCategory.name}</h2>
               </div>
 
-              <div className="title-line" />
+              <span className="category-count">
+                {currentCategory.items.length.toLocaleString("fa-IR")}
+                <small> آیتم</small>
+              </span>
             </div>
 
             {currentCategory.items.length === 0 ? (
-              <div className="empty">
-                <div className="empty-icon">☕</div>
-
-                <h2>
-                  آیتمی در این دسته وجود ندارد
-                </h2>
-
-                <p>
-                  به‌زودی محصولات این بخش اضافه می‌شوند.
-                </p>
+              <div className="empty-state">
+                <span>☕</span>
+                <h3>هنوز چیزی اینجا نیست</h3>
+                <p>به‌زودی این بخش تکمیل می‌شود.</p>
               </div>
             ) : (
-              <div className="menu-grid">
-                {currentCategory.items.map((item) => (
-                  <article
-                    key={item.id}
-                    className="menu-card"
-                  >
-                    {/* Image */}
+              <div className="menu-list">
+                {currentCategory.items.map((item, index) => (
+                  <article className="menu-item" key={item.id}>
+                    <div className="item-number">
+                      {(index + 1).toString().padStart(2, "0")}
+                    </div>
 
                     <div className="item-image">
                       {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                        />
+                        <img src={item.image} alt={item.name} />
                       ) : (
-                        <div className="no-image">
+                        <div className="image-placeholder">
                           <span>☕</span>
                         </div>
                       )}
-
-                      <div className="image-gradient" />
                     </div>
 
-                    {/* Info */}
+                    <div className="item-details">
+                      <div className="item-name-row">
+                        <h3>{item.name}</h3>
 
-                    <div className="item-info">
-                      <div className="item-top">
-                        <h2>{item.name}</h2>
+                        <div className="item-dots" />
 
-                        <div className="price">
-                          <strong>
-                            {item.price.toLocaleString(
-                              "fa-IR"
-                            )}
-                          </strong>
-
-                          <span>تومان</span>
+                        <div className="item-price">
+                          {item.price.toLocaleString("fa-IR")}
+                          <small> تومان</small>
                         </div>
                       </div>
 
                       {item.description && (
-                        <p>
-                          {item.description}
-                        </p>
+                        <p>{item.description}</p>
                       )}
                     </div>
                   </article>
@@ -200,31 +182,24 @@ export default function MenuPage() {
         )}
       </section>
 
-      {/* Empty Menu */}
-
       {categories.length === 0 && (
-        <div className="empty full-empty">
-          <div className="empty-icon">☕</div>
-
-          <h2>منو در حال آماده‌سازی است</h2>
-
-          <p>
-            به‌زودی منوی کافه پادرا در دسترس خواهد بود.
-          </p>
+        <div className="empty-state full-empty">
+          <span>☕</span>
+          <h3>منو در حال آماده‌سازی است</h3>
+          <p>به‌زودی منوی کافه پادرا در دسترس خواهد بود.</p>
         </div>
       )}
 
       {/* Footer */}
-
       <footer className="menu-footer">
-        <strong>پادراپارک</strong>
+        <div>
+          <strong>PADRA</strong>
+          <span>CAFE & MORE</span>
+        </div>
 
-        <span>
-          لحظات خوب، طعم خوب
-        </span>
+        <p>لحظات خوب، طعم خوب</p>
       </footer>
-
-    
     </main>
   );
 }
+

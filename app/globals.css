@@ -131,10 +131,11 @@ img {
   left: 0;
   z-index: 1000;
   height: 78px;
-  background: rgba(18, 62, 115, 0.96);
+  background: #1769ff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 30px rgba(18, 62, 115, 0.12);
   backdrop-filter: blur(12px);
+  
 }
 
 .header-inner {
@@ -143,6 +144,7 @@ img {
   margin: 0 auto;
   display: flex;
   align-items: center;
+  color:rgb(255, 255, 255);
 }
 
 .logo {
@@ -184,7 +186,7 @@ img {
 }
 
 .desktop-nav a:hover {
-  color: #ffffff;
+  color: #dee948;
 }
 
 .desktop-nav a:hover::after {

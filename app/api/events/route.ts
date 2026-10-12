@@ -4,10 +4,26 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const events = await prisma.event.findMany({
-      orderBy: [
-        { eventDate: "asc" },
-        { sortOrder: "asc" },
-      ],
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        _count: {
+          select: {
+            occurrences: true,
+          },
+        },
+        occurrences: {
+          where: {
+            isActive: true,
+          },
+          orderBy: [
+            { eventDate: "asc" },
+            { startTime: "asc" },
+            { sortOrder: "asc" },
+          ],
+        },
+      },
     });
 
     return NextResponse.json(events);
@@ -29,17 +45,28 @@ export async function POST(request: Request) {
     const description = String(body.description ?? "").trim();
     const image = body.image ? String(body.image) : null;
 
-    const eventDate = new Date(body.eventDate);
+    const capacity =
+      body.capacity !== null &&
+      body.capacity !== undefined &&
+      body.capacity !== ""
+        ? Number(body.capacity)
+        : null;
 
-    const startTime = body.startTime
-      ? String(body.startTime).trim()
+    const genre = body.genre
+      ? String(body.genre).trim()
       : null;
 
-    const endTime = body.endTime
-      ? String(body.endTime).trim()
-      : null;
+    const duration =
+      body.duration !== null &&
+      body.duration !== undefined &&
+      body.duration !== ""
+        ? Number(body.duration)
+        : null;
 
-    const sortOrder = Number(body.sortOrder ?? 0);
+    const isActive =
+      body.isActive === undefined
+        ? true
+        : Boolean(body.isActive);
 
     if (!title) {
       return NextResponse.json(
@@ -48,16 +75,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (isNaN(eventDate.getTime())) {
+    if (
+      capacity !== null &&
+      (!Number.isFinite(capacity) || capacity <= 0)
+    ) {
       return NextResponse.json(
-        { error: "تاریخ ایونت معتبر نیست" },
+        { error: "ظرفیت ایونت معتبر نیست" },
         { status: 400 }
       );
     }
 
-    if (!Number.isFinite(sortOrder)) {
+    if (
+      duration !== null &&
+      (!Number.isFinite(duration) || duration <= 0)
+    ) {
       return NextResponse.json(
-        { error: "ترتیب نمایش معتبر نیست" },
+        { error: "مدت زمان ایونت معتبر نیست" },
         { status: 400 }
       );
     }
@@ -67,11 +100,10 @@ export async function POST(request: Request) {
         title,
         description: description || null,
         image,
-        eventDate,
-        startTime,
-        endTime,
-        sortOrder,
-        isActive: true,
+        capacity,
+        genre,
+        duration,
+        isActive,
       },
     });
 

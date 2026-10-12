@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DateObject from "react-date-object";
-import DatePicker from "react-multi-date-picker";
-import persian from "react-date-object/calendars/persian";
-import persian_fa from "react-date-object/locales/persian_fa";
 
 import "./event.css";
 
@@ -13,21 +9,14 @@ type EventItem = {
     title: string;
     description: string | null;
     image: string | null;
-    eventDate: string;
-    startTime: string | null;
-    endTime: string | null;
+    capacity: number | null;
+    genre: string | null;
+    duration: number | null;
     sortOrder: number;
     isActive: boolean;
-};
-
-const emptyForm = {
-    title: "",
-    description: "",
-    eventDate: "",
-    startTime: "",
-    endTime: "",
-    sortOrder: "0",
-    isActive: true,
+    _count?: {
+        occurrences: number;
+    };
 };
 
 export default function EventsAdminPage() {
@@ -38,13 +27,14 @@ export default function EventsAdminPage() {
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [eventDate, setEventDate] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
+    const [capacity, setCapacity] = useState("");
+    const [genre, setGenre] = useState("");
+    const [duration, setDuration] = useState("");
     const [sortOrder, setSortOrder] = useState("0");
     const [isActive, setIsActive] = useState(true);
 
     const [image, setImage] = useState<string | null>(null);
+
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -72,13 +62,13 @@ export default function EventsAdminPage() {
 
     function resetForm() {
         setEditingId(null);
-        setTitle(emptyForm.title);
-        setDescription(emptyForm.description);
-        setEventDate(emptyForm.eventDate);
-        setStartTime(emptyForm.startTime);
-        setEndTime(emptyForm.endTime);
-        setSortOrder(emptyForm.sortOrder);
-        setIsActive(emptyForm.isActive);
+        setTitle("");
+        setDescription("");
+        setCapacity("");
+        setGenre("");
+        setDuration("");
+        setSortOrder("0");
+        setIsActive(true);
         setImage(null);
     }
 
@@ -87,21 +77,17 @@ export default function EventsAdminPage() {
 
         setTitle(event.title);
         setDescription(event.description || "");
-
-        const date = new Date(event.eventDate);
-
-        if (!isNaN(date.getTime())) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const day = String(date.getDate()).padStart(2, "0");
-
-            setEventDate(`${year}-${month}-${day}`);
-        } else {
-            setEventDate("");
-        }
-
-        setStartTime(event.startTime || "");
-        setEndTime(event.endTime || "");
+        setCapacity(
+            event.capacity !== null && event.capacity !== undefined
+                ? String(event.capacity)
+                : ""
+        );
+        setGenre(event.genre || "");
+        setDuration(
+            event.duration !== null && event.duration !== undefined
+                ? String(event.duration)
+                : ""
+        );
         setSortOrder(String(event.sortOrder));
         setIsActive(event.isActive);
         setImage(event.image || null);
@@ -143,6 +129,7 @@ export default function EventsAdminPage() {
             setImage(data.url);
         } catch (error) {
             console.error(error);
+
             alert(
                 error instanceof Error
                     ? error.message
@@ -159,24 +146,19 @@ export default function EventsAdminPage() {
             return;
         }
 
-        if (!eventDate) {
-            alert("تاریخ ایونت را وارد کنید");
-            return;
-        }
-
-        const payload = {
-            title: title.trim(),
-            description: description.trim() || null,
-            image,
-            eventDate,
-            startTime: startTime || null,
-            endTime: endTime || null,
-            sortOrder: Number(sortOrder || 0),
-            isActive,
-        };
-
         try {
             setSaving(true);
+
+            const payload = {
+                title: title.trim(),
+                description: description.trim() || null,
+                image,
+                capacity: capacity ? Number(capacity) : null,
+                genre: genre.trim() || null,
+                duration: duration ? Number(duration) : null,
+                sortOrder: Number(sortOrder || 0),
+                isActive,
+            };
 
             const url = editingId
                 ? `/api/events/${editingId}`
@@ -195,7 +177,9 @@ export default function EventsAdminPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "خطا در ذخیره ایونت");
+                throw new Error(
+                    data.error || "خطا در ذخیره ایونت"
+                );
             }
 
             await loadEvents();
@@ -208,6 +192,7 @@ export default function EventsAdminPage() {
             );
         } catch (error) {
             console.error(error);
+
             alert(
                 error instanceof Error
                     ? error.message
@@ -220,12 +205,10 @@ export default function EventsAdminPage() {
 
     async function deleteEvent(id: number) {
         const confirmed = window.confirm(
-            "آیا از حذف این ایونت مطمئن هستید؟"
+            "آیا از حذف این ایونت مطمئن هستید؟ تمام اجراهای این ایونت نیز حذف خواهند شد."
         );
 
-        if (!confirmed) {
-            return;
-        }
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/events/${id}`, {
@@ -235,7 +218,9 @@ export default function EventsAdminPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "خطا در حذف ایونت");
+                throw new Error(
+                    data.error || "خطا در حذف ایونت"
+                );
             }
 
             setEvents((current) =>
@@ -247,6 +232,7 @@ export default function EventsAdminPage() {
             }
         } catch (error) {
             console.error(error);
+
             alert(
                 error instanceof Error
                     ? error.message
@@ -257,22 +243,25 @@ export default function EventsAdminPage() {
 
     async function toggleActive(event: EventItem) {
         try {
-            const response = await fetch(`/api/events/${event.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    title: event.title,
-                    description: event.description,
-                    image: event.image,
-                    eventDate: event.eventDate,
-                    startTime: event.startTime,
-                    endTime: event.endTime,
-                    sortOrder: event.sortOrder,
-                    isActive: !event.isActive,
-                }),
-            });
+            const response = await fetch(
+                `/api/events/${event.id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        title: event.title,
+                        description: event.description,
+                        image: event.image,
+                        capacity: event.capacity,
+                        genre: event.genre,
+                        duration: event.duration,
+                        sortOrder: event.sortOrder,
+                        isActive: !event.isActive,
+                    }),
+                }
+            );
 
             if (!response.ok) {
                 throw new Error();
@@ -282,9 +271,9 @@ export default function EventsAdminPage() {
                 current.map((item) =>
                     item.id === event.id
                         ? {
-                            ...item,
-                            isActive: !item.isActive,
-                        }
+                              ...item,
+                              isActive: !item.isActive,
+                          }
                         : item
                 )
             );
@@ -294,26 +283,18 @@ export default function EventsAdminPage() {
         }
     }
 
-    function formatDate(dateString: string) {
-        const date = new Date(dateString);
-
-        if (isNaN(date.getTime())) {
-            return "-";
-        }
-
-        return date.toLocaleDateString("fa-IR");
-    }
-
     return (
         <div className="events-page">
             <div className="events-header">
                 <div>
-                    <span className="eyebrow">PADRA EVENTS</span>
+                    <span className="eyebrow">
+                        PADRA EVENTS
+                    </span>
 
                     <h1>ایونت‌ها</h1>
 
                     <p>
-                        برنامه‌ها و رویدادهای پادرا را مدیریت کنید.
+                        ایونت‌های پادرا را تعریف و مدیریت کنید.
                     </p>
                 </div>
 
@@ -334,11 +315,13 @@ export default function EventsAdminPage() {
                         <h2>
                             {editingId
                                 ? "ویرایش ایونت"
-                                : "ایجاد ایونت جدید"}
+                                : "تعریف ایونت جدید"}
                         </h2>
 
                         <p>
-                            اطلاعات برنامه‌ای که می‌خواهید در سایت نمایش داده شود را وارد کنید.
+                            اطلاعات ثابت ایونت را وارد کنید.
+                            تاریخ و ساعت برگزاری در بخش «اجراها»
+                            تعریف می‌شود.
                         </p>
                     </div>
                 </div>
@@ -349,50 +332,59 @@ export default function EventsAdminPage() {
 
                         <input
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="مثلاً مسابقه لیزرتگ"
+                            onChange={(e) =>
+                                setTitle(e.target.value)
+                            }
+                            placeholder="مثلاً Deception"
                         />
                     </div>
 
                     <div className="field">
-                        <label>تاریخ</label>
+                        <label>سبک / ژانر</label>
 
-                        <DatePicker
-                            calendar={persian}
-                            locale={persian_fa}
-                            value={eventDate || ""}
-                            onChange={(date) => {
-                                if (!date) {
-                                    setEventDate("");
-                                    return;
+                        <input
+                            value={genre}
+                            onChange={(e) =>
+                                setGenre(e.target.value)
+                            }
+                            placeholder="مثلاً معمایی، جنایی"
+                        />
+                    </div>
+
+                    <div className="field">
+                        <label>ظرفیت</label>
+
+                        <div className="input-with-suffix">
+                            <input
+                                type="number"
+                                min="1"
+                                value={capacity}
+                                onChange={(e) =>
+                                    setCapacity(e.target.value)
                                 }
+                                placeholder="12"
+                            />
 
-                                setEventDate(date.toDate().toISOString());
-                            }}
-                            format="YYYY/MM/DD"
-                            calendarPosition="bottom-right"
-                            placeholder="تاریخ ایونت را انتخاب کنید"
-                        />
+                            <span>نفر</span>
+                        </div>
                     </div>
 
                     <div className="field">
-                        <label>ساعت شروع</label>
+                        <label>مدت زمان</label>
 
-                        <input
-                            type="time"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                        />
-                    </div>
+                        <div className="input-with-suffix">
+                            <input
+                                type="number"
+                                min="1"
+                                value={duration}
+                                onChange={(e) =>
+                                    setDuration(e.target.value)
+                                }
+                                placeholder="120"
+                            />
 
-                    <div className="field">
-                        <label>ساعت پایان</label>
-
-                        <input
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                        />
+                            <span>دقیقه</span>
+                        </div>
                     </div>
 
                     <div className="field">
@@ -400,9 +392,11 @@ export default function EventsAdminPage() {
 
                         <input
                             type="number"
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(e.target.value)}
                             min="0"
+                            value={sortOrder}
+                            onChange={(e) =>
+                                setSortOrder(e.target.value)
+                            }
                         />
                     </div>
 
@@ -411,8 +405,10 @@ export default function EventsAdminPage() {
 
                         <textarea
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="توضیح کوتاهی درباره این ایونت..."
+                            onChange={(e) =>
+                                setDescription(e.target.value)
+                            }
+                            placeholder="مثلاً یک تجربه معمایی و جنایی در اتاق جنایی پادرا..."
                             rows={4}
                         />
                     </div>
@@ -425,7 +421,10 @@ export default function EventsAdminPage() {
                                 <div className="image-preview">
                                     <img
                                         src={image}
-                                        alt={title || "تصویر ایونت"}
+                                        alt={
+                                            title ||
+                                            "تصویر ایونت"
+                                        }
                                     />
 
                                     <div className="image-overlay">
@@ -437,13 +436,18 @@ export default function EventsAdminPage() {
                                                 accept="image/*"
                                                 onChange={(e) => {
                                                     const file =
-                                                        e.target.files?.[0];
+                                                        e
+                                                            .target
+                                                            .files?.[0];
 
                                                     if (file) {
-                                                        uploadImage(file);
+                                                        uploadImage(
+                                                            file
+                                                        );
                                                     }
 
-                                                    e.currentTarget.value = "";
+                                                    e.currentTarget.value =
+                                                        "";
                                                 }}
                                             />
                                         </label>
@@ -451,7 +455,9 @@ export default function EventsAdminPage() {
                                         <button
                                             type="button"
                                             className="remove-image"
-                                            onClick={() => setImage(null)}
+                                            onClick={() =>
+                                                setImage(null)
+                                            }
                                         >
                                             حذف تصویر
                                         </button>
@@ -470,7 +476,8 @@ export default function EventsAdminPage() {
                                                 uploadImage(file);
                                             }
 
-                                            e.currentTarget.value = "";
+                                            e.currentTarget.value =
+                                                "";
                                         }}
                                     />
 
@@ -485,7 +492,8 @@ export default function EventsAdminPage() {
                                     </strong>
 
                                     <span>
-                                        JPG، PNG یا WEBP — حداکثر ۵ مگابایت
+                                        JPG، PNG یا WEBP — حداکثر
+                                        ۵ مگابایت
                                     </span>
                                 </label>
                             )}
@@ -498,7 +506,9 @@ export default function EventsAdminPage() {
                                 type="checkbox"
                                 checked={isActive}
                                 onChange={(e) =>
-                                    setIsActive(e.target.checked)
+                                    setIsActive(
+                                        e.target.checked
+                                    )
                                 }
                             />
 
@@ -506,10 +516,12 @@ export default function EventsAdminPage() {
                         </label>
 
                         <div>
-                            <strong>نمایش ایونت</strong>
+                            <strong>ایونت فعال</strong>
 
                             <span>
-                                ایونت فعال در سایت نمایش داده می‌شود.
+                                ایونت‌های فعال می‌توانند اجرا
+                                داشته باشند و در سایت نمایش داده
+                                شوند.
                             </span>
                         </div>
                     </div>
@@ -529,13 +541,15 @@ export default function EventsAdminPage() {
                             type="button"
                             className="save-button"
                             onClick={saveEvent}
-                            disabled={saving || uploading}
+                            disabled={
+                                saving || uploading
+                            }
                         >
                             {saving
                                 ? "در حال ذخیره..."
                                 : editingId
-                                    ? "ذخیره تغییرات"
-                                    : "ایجاد ایونت"}
+                                ? "ذخیره تغییرات"
+                                : "ایجاد ایونت"}
                         </button>
                     </div>
                 </div>
@@ -544,10 +558,13 @@ export default function EventsAdminPage() {
             <section className="events-list-section">
                 <div className="list-header">
                     <div>
-                        <h2>لیست ایونت‌ها</h2>
+                        <h2>ایونت‌های تعریف‌شده</h2>
 
                         <span>
-                            {events.length.toLocaleString("fa-IR")} ایونت
+                            {events.length.toLocaleString(
+                                "fa-IR"
+                            )}{" "}
+                            ایونت
                         </span>
                     </div>
                 </div>
@@ -558,14 +575,15 @@ export default function EventsAdminPage() {
                     </div>
                 ) : events.length === 0 ? (
                     <div className="empty-state">
-                        هنوز هیچ ایونتی ثبت نشده است.
+                        هنوز هیچ ایونتی تعریف نشده است.
                     </div>
                 ) : (
                     <div className="events-table">
                         <div className="table-head">
                             <span>ایونت</span>
-                            <span>تاریخ</span>
-                            <span>زمان</span>
+                            <span>ظرفیت</span>
+                            <span>مدت</span>
+                            <span>اجراها</span>
                             <span>وضعیت</span>
                             <span>عملیات</span>
                         </div>
@@ -589,40 +607,55 @@ export default function EventsAdminPage() {
                                     )}
 
                                     <div>
-                                        <strong>{event.title}</strong>
+                                        <strong>
+                                            {event.title}
+                                        </strong>
 
-                                        {event.description && (
+                                        {event.genre && (
                                             <span>
-                                                {event.description}
+                                                {event.genre}
                                             </span>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="date-cell">
-                                    {formatDate(event.eventDate)}
+                                <div className="table-cell">
+                                    {event.capacity
+                                        ? `${event.capacity.toLocaleString(
+                                              "fa-IR"
+                                          )} نفر`
+                                        : "—"}
                                 </div>
 
-                                <div className="time-cell">
-                                    {event.startTime || "--:--"}
+                                <div className="table-cell">
+                                    {event.duration
+                                        ? `${event.duration.toLocaleString(
+                                              "fa-IR"
+                                          )} دقیقه`
+                                        : "—"}
+                                </div>
 
-                                    {event.endTime && (
-                                        <>
-                                            {" "}
-                                            تا {event.endTime}
-                                        </>
+                                <div className="table-cell">
+                                    {(
+                                        event._count
+                                            ?.occurrences ?? 0
+                                    ).toLocaleString(
+                                        "fa-IR"
                                     )}
                                 </div>
 
                                 <div>
                                     <button
                                         type="button"
-                                        className={`status-badge ${event.isActive
-                                            ? "active"
-                                            : "inactive"
-                                            }`}
+                                        className={`status-badge ${
+                                            event.isActive
+                                                ? "active"
+                                                : "inactive"
+                                        }`}
                                         onClick={() =>
-                                            toggleActive(event)
+                                            toggleActive(
+                                                event
+                                            )
                                         }
                                     >
                                         {event.isActive
@@ -632,6 +665,16 @@ export default function EventsAdminPage() {
                                 </div>
 
                                 <div className="row-actions">
+                                    <button
+                                        type="button"
+                                        className="occurrence-button"
+                                        onClick={() =>
+                                            (window.location.href = `/admin/events/${event.id}/occurrences`)
+                                        }
+                                    >
+                                        اجراها
+                                    </button>
+
                                     <button
                                         type="button"
                                         className="edit-button"
@@ -646,7 +689,9 @@ export default function EventsAdminPage() {
                                         type="button"
                                         className="delete-button"
                                         onClick={() =>
-                                            deleteEvent(event.id)
+                                            deleteEvent(
+                                                event.id
+                                            )
                                         }
                                     >
                                         حذف
@@ -657,8 +702,6 @@ export default function EventsAdminPage() {
                     </div>
                 )}
             </section>
-
-
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import "./menuItems.css"
 type Category = {
   id: number;
   name: string;
@@ -39,6 +39,7 @@ export default function MenuItemsPage() {
 
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
