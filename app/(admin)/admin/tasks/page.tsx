@@ -8,6 +8,7 @@ import "@/components/staff/staff.css";
 import { useFeedback } from "@/components/ui/Feedback";
 import { formatDateTimeFa } from "@/lib/format";
 import { formatJalali } from "@/lib/jalali";
+import { CreatePanel, WorkTabs, WorkToolbar, type WorkTab } from "@/components/staff/Workspace";
 import { matchesQuery } from "@/lib/search";
 import { TASK_STATUS_LABEL, TASK_STATUSES, type TaskStatus } from "@/lib/tasks";
 
@@ -146,6 +147,9 @@ export default function TasksPage() {
   const [busy, setBusy] = useState(false);
   const [managedQuery, setManagedQuery] = useState("");
   const [openTask, setOpenTask] = useState<number | null>(null);
+  const [tab, setTab] = useState<"mine" | "managed">("mine");
+  const [showForm, setShowForm] = useState(false);
+  const [mineQuery, setMineQuery] = useState("");
 
   const load = useCallback(async () => {
     const mine = await fetch("/api/tasks", { cache: "no-store" });
@@ -211,6 +215,7 @@ export default function TasksPage() {
       setDescription("");
       setDueDate("");
       setSelected(new Set());
+      setShowForm(false);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا در ایجاد تسک");
@@ -253,91 +258,111 @@ export default function TasksPage() {
     await load();
   }
 
+  const visibleMine = useMemo(
+    () =>
+      assignments.filter((a) =>
+        matchesQuery(
+          `${a.task.title} ${a.task.description ?? ""} ${a.task.createdBy.name} ${TASK_STATUS_LABEL[a.status]} ${a.updates.map((u) => u.note ?? "").join(" ")}`,
+          mineQuery
+        )
+      ),
+    [assignments, mineQuery]
+  );
+
+  const tabs: WorkTab<"mine" | "managed">[] = [
+    { key: "mine", label: "تسک‌های من", badge: assignments.filter((a) => a.status !== "DONE").length },
+    ...(canCreate ? [{ key: "managed" as const, label: "تسک‌های تعریف‌شده" }] : []),
+  ];
+
+  const createPanel = canCreate && (
+    <CreatePanel open={showForm} title="ایجاد تسک برای پرسنل" description="انجام‌دهنده(ها) را انتخاب کنید. تاریخ ایجاد و ایجادکننده خودکار ثبت می‌شود.">
+        <form onSubmit={create}>
+          <div className="st-row">
+            <div className="st-field">
+              <label>عنوان تسک</label>
+              <input className="st-input" value={title} onChange={(e) => setTitle(e.target.value)} minLength={2} maxLength={120} required />
+            </div>
+            <div className="st-field">
+              <label>مهلت انجام (اختیاری)</label>
+              <JalaliDateSelect value={dueDate} onChange={setDueDate} />
+              <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setDueDate("")}>
+                پاک‌کردن تاریخ
+              </button>
+            </div>
+          </div>
+
+          <div className="st-field">
+            <label>توضیحات</label>
+            <textarea className="st-textarea" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
+          </div>
+
+          <div className="st-field">
+            <label>
+              انجام‌دهنده‌ها ({selected.size.toLocaleString("fa-IR")} نفر انتخاب شده)
+            </label>
+            <input className="st-input" type="search" value={assigneeQuery} onChange={(e) => setAssigneeQuery(e.target.value)} placeholder="جست‌وجوی نام یا نقش..." />
+            <div className="st-actions" style={{ margin: "6px 0" }}>
+              <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setSelected(new Set(visibleAssignees.map((a) => a.id)))}>
+                انتخاب همه‌ی نتایج
+              </button>
+              <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setSelected(new Set())}>
+                پاک‌کردن انتخاب
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 6, maxHeight: 220, overflow: "auto", border: "1px solid #d9e0ea", borderRadius: 10, padding: 8 }}>
+              {visibleAssignees.length === 0 && <span className="st-note">کسی پیدا نشد.</span>}
+              {visibleAssignees.map((person) => (
+                <label key={person.id} style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
+                  <input type="checkbox" checked={selected.has(person.id)} onChange={() => toggle(person.id)} />
+                  <span>
+                    {person.name} <small style={{ color: "#64748b" }}>({person.role.name})</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button className="st-btn" disabled={busy}>
+            {busy ? "در حال ثبت..." : "ایجاد و ارسال تسک"}
+          </button>
+        </form>
+    </CreatePanel>
+  );
+
+  const toggleForm = canCreate ? () => setShowForm((v) => !v) : undefined;
+
   return (
     <CrudPage
       eyebrow="PADRA STAFF"
       title="کارتابل و تسک‌ها"
       description="تسک‌های محول‌شده را پیگیری کنید و هر روز گزارش پیشرفت بنویسید. مدیر مجموعه و سوپروایزر می‌توانند تسک تعریف و به پرسنل محول کنند."
-      count={assignments.filter((a) => a.status !== "DONE").length}
-      countLabel="تسک باز"
     >
       {error && <div className="st-alert st-alert--error">{error}</div>}
 
-      {canCreate && (
-        <>
-          <CrudCard title="ایجاد تسک برای پرسنل" description="انجام‌دهنده(ها) را انتخاب کنید. تاریخ ایجاد و ایجادکننده خودکار ثبت می‌شود.">
-            <form onSubmit={create}>
-              <div className="st-row">
-                <div className="st-field">
-                  <label>عنوان تسک</label>
-                  <input className="st-input" value={title} onChange={(e) => setTitle(e.target.value)} minLength={2} maxLength={120} required />
-                </div>
-                <div className="st-field">
-                  <label>مهلت انجام (اختیاری)</label>
-                  <JalaliDateSelect value={dueDate} onChange={setDueDate} />
-                  <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setDueDate("")}>
-                    پاک‌کردن تاریخ
-                  </button>
-                </div>
-              </div>
+      <WorkTabs tabs={tabs} value={tab} onChange={setTab} />
 
-              <div className="st-field">
-                <label>توضیحات</label>
-                <textarea className="st-textarea" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
-              </div>
+      {tab === "mine" && (
+        <CrudCard title="تسک‌های من" description="هر روز می‌توانید توضیحات و آخرین وضعیت کار را ثبت کنید؛ همه‌ی گزارش‌ها با تاریخ نگهداری می‌شوند.">
+          <WorkToolbar search={mineQuery} onSearch={setMineQuery} actionLabel="تسک جدید" onAction={toggleForm} actionOpen={showForm} />
+          {createPanel}
 
-              <div className="st-field">
-                <label>
-                  انجام‌دهنده‌ها ({selected.size.toLocaleString("fa-IR")} نفر انتخاب شده)
-                </label>
-                <input className="st-input" type="search" value={assigneeQuery} onChange={(e) => setAssigneeQuery(e.target.value)} placeholder="جست‌وجوی نام یا نقش..." />
-                <div className="st-actions" style={{ margin: "6px 0" }}>
-                  <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setSelected(new Set(visibleAssignees.map((a) => a.id)))}>
-                    انتخاب همه‌ی نتایج
-                  </button>
-                  <button type="button" className="st-btn st-btn--small st-btn--ghost" onClick={() => setSelected(new Set())}>
-                    پاک‌کردن انتخاب
-                  </button>
-                </div>
-                <div style={{ display: "grid", gap: 6, maxHeight: 220, overflow: "auto", border: "1px solid #d9e0ea", borderRadius: 10, padding: 8 }}>
-                  {visibleAssignees.length === 0 && <span className="st-note">کسی پیدا نشد.</span>}
-                  {visibleAssignees.map((person) => (
-                    <label key={person.id} style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
-                      <input type="checkbox" checked={selected.has(person.id)} onChange={() => toggle(person.id)} />
-                      <span>
-                        {person.name} <small style={{ color: "#64748b" }}>({person.role.name})</small>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <button className="st-btn" disabled={busy}>
-                {busy ? "در حال ثبت..." : "ایجاد و ارسال تسک"}
-              </button>
-            </form>
-          </CrudCard>
-          <div style={{ height: 18 }} />
-        </>
+          {visibleMine.length === 0 ? (
+            <div className="st-empty">{assignments.length ? "موردی با این جست‌وجو پیدا نشد." : "در حال حاضر تسکی به شما اختصاص داده نشده است."}</div>
+          ) : (
+            <div className="st-card-list">
+              {visibleMine.map((assignment) => (
+                <MyTaskCard key={assignment.id} assignment={assignment} onReport={report} />
+              ))}
+            </div>
+          )}
+        </CrudCard>
       )}
 
-      <CrudCard title="تسک‌های من" description="هر روز می‌توانید توضیحات و آخرین وضعیت کار را ثبت کنید؛ همه‌ی گزارش‌ها با تاریخ نگهداری می‌شوند.">
-        {assignments.length === 0 ? (
-          <div className="st-empty">در حال حاضر تسکی به شما اختصاص داده نشده است.</div>
-        ) : (
-          <div className="st-card-list">
-            {assignments.map((assignment) => (
-              <MyTaskCard key={assignment.id} assignment={assignment} onReport={report} />
-            ))}
-          </div>
-        )}
-      </CrudCard>
+      {tab === "managed" && canCreate && (
+        <CrudCard title="تسک‌های تعریف‌شده و گزارش انجام‌دهنده‌ها" description="وضعیت و سابقه‌ی گزارش هر نفر را ببینید.">
+          <WorkToolbar search={managedQuery} onSearch={setManagedQuery} searchPlaceholder="جست‌وجو در عنوان، ایجادکننده یا انجام‌دهنده..." actionLabel="تسک جدید" onAction={toggleForm} actionOpen={showForm} />
+          {createPanel}
 
-      {canCreate && (
-        <>
-          <div style={{ height: 18 }} />
-          <CrudCard title="تسک‌های تعریف‌شده و گزارش انجام‌دهنده‌ها" description="وضعیت و سابقه‌ی گزارش هر نفر را ببینید.">
-            <input className="st-input" type="search" value={managedQuery} onChange={(e) => setManagedQuery(e.target.value)} placeholder="جست‌وجو در عنوان، ایجادکننده یا انجام‌دهنده..." aria-label="جست‌وجو در تسک‌ها" />
 
             {visibleManaged.length === 0 ? (
               <div className="st-empty">تسکی پیدا نشد.</div>
@@ -385,8 +410,7 @@ export default function TasksPage() {
                 ))}
               </div>
             )}
-          </CrudCard>
-        </>
+        </CrudCard>
       )}
     </CrudPage>
   );

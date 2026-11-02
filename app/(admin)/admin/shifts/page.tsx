@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { CrudPage } from "@/components/admin/crud/CrudPage";
+import { WorkTabs, type WorkTab } from "@/components/staff/Workspace";
 import "@/components/staff/staff.css";
-import { fa } from "@/lib/format";
 import { useStaffMe } from "@/lib/use-staff-me";
 
 import MyShifts from "./MyShifts";
@@ -13,12 +13,20 @@ import TeamShifts from "./TeamShifts";
 
 import "./shifts.css";
 
-type Tab = "mine" | "team" | "swaps";
+type Tab = "mine" | "requests" | "team" | "swaps";
 
 export default function ShiftsPage() {
   const { me, can, loaded } = useStaffMe();
   const [tab, setTab] = useState<Tab>("mine");
   const [pending, setPending] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
+
+  const tabs: WorkTab<Tab>[] = [
+    { key: "mine", label: "شیفت من" },
+    { key: "requests", label: "درخواست‌های جابه‌جایی" },
+    ...(can?.shiftsView ? [{ key: "team" as Tab, label: "شیفت پرسنل" }] : []),
+    ...(can?.swapApprove ? [{ key: "swaps" as Tab, label: "تأیید جابه‌جایی", badge: pending }] : []),
+  ];
 
   return (
     <CrudPage
@@ -26,27 +34,24 @@ export default function ShiftsPage() {
       title="شیفت‌های کاری"
       description="تقویم ماهانه و هفتگی شیفت، شیفت روزانه‌ی پرسنل و درخواست جابه‌جایی"
     >
-      <div className="st-tabs" role="tablist">
-        <button type="button" className={tab === "mine" ? "active" : ""} onClick={() => setTab("mine")}>
-          شیفت من
-        </button>
-        {can?.shiftsView && (
-          <button type="button" className={tab === "team" ? "active" : ""} onClick={() => setTab("team")}>
-            شیفت پرسنل
-          </button>
-        )}
-        {can?.swapApprove && (
-          <button type="button" className={tab === "swaps" ? "active" : ""} onClick={() => setTab("swaps")}>
-            تأیید جابه‌جایی{pending > 0 && <span>{fa(pending)}</span>}
-          </button>
-        )}
-      </div>
+      <WorkTabs tabs={tabs} value={tab} onChange={setTab} />
 
       {!loaded ? (
         <div className="st-empty">در حال دریافت...</div>
       ) : (
         <>
-          {tab === "mine" && <MyShifts myId={me?.id} />}
+          {(tab === "mine" || tab === "requests") && (
+            <MyShifts
+              myId={me?.id}
+              section={tab === "mine" ? "calendar" : "swaps"}
+              formOpen={formOpen}
+              onFormOpenChange={setFormOpen}
+              onPickDate={() => {
+                setFormOpen(true);
+                setTab("requests");
+              }}
+            />
+          )}
           {tab === "team" && can?.shiftsView && <TeamShifts />}
           {tab === "swaps" && can?.swapApprove && <SwapApprovals onChange={setPending} />}
         </>

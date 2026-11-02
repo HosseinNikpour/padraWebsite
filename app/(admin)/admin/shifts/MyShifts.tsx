@@ -4,6 +4,8 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { CrudCard } from "@/components/admin/crud/CrudPage";
+import { CreatePanel, DataTable, WorkToolbar, type Column } from "@/components/staff/Workspace";
+import { matchesQuery } from "@/lib/search";
 import JalaliDateSelect from "@/components/staff/JalaliDateSelect";
 import ShiftChip from "@/components/staff/ShiftChip";
 import { nowInTehran } from "@/lib/availability";
@@ -46,7 +48,18 @@ export function Legend() {
   );
 }
 
-export default function MyShifts({ myId }: { myId?: number }) {
+type MyShiftsProps = {
+  myId?: number;
+  /** calendar: تقویم شیفت من — swaps: درخواست‌های جابه‌جایی (جدول + فرم ایجاد) */
+  section: "calendar" | "swaps";
+  formOpen?: boolean;
+  onFormOpenChange?: (open: boolean) => void;
+  /** وقتی روی یک روز تقویم زده می‌شود (برای رفتن به تب درخواست‌ها و باز کردن فرم) */
+  onPickDate?: () => void;
+};
+
+export default function MyShifts({ myId, section, formOpen, onFormOpenChange, onPickDate }: MyShiftsProps) {
+  const [query, setQuery] = useState("");
     const { confirm: confirmDialog, toast } = useFeedback();
   const today = nowInTehran().date;
   const [view, setView] = useState<"month" | "week">("month");
@@ -172,6 +185,7 @@ export default function MyShifts({ myId }: { myId?: number }) {
       setReason("");
       setReplacementId("");
       setRequested("");
+      onFormOpenChange?.(false);
       await loadSwaps();
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا");
@@ -199,172 +213,205 @@ export default function MyShifts({ myId }: { myId?: number }) {
 
   const canSwap = swapCurrent && swapCurrent !== "LEAVE" && swapDate >= today;
 
+  const swapSearchText = (item: Swap) =>
+    [
+      formatJalali(item.date, true),
+      item.date,
+      SHIFT_META[item.currentType as ShiftType]?.label ?? "",
+      SHIFT_META[item.requestedType as ShiftType]?.label ?? "",
+      item.replacement?.name ?? "",
+      item.reason ?? "",
+      (SWAP_STATUS[item.status] ?? [item.status])[0],
+      item.decidedBy ?? "",
+      item.decisionNote ?? "",
+    ].join(" ");
+
+  const swapColumns: Column<Swap>[] = [
+    { key: "date", label: "تاریخ", render: (item) => <strong>{formatJalali(item.date, true)}</strong> },
+    {
+      key: "change",
+      label: "تغییر شیفت",
+      render: (item) => (
+        <>
+          <bdi>{SHIFT_META[item.currentType as ShiftType]?.label}</bdi> ← <bdi>{SHIFT_META[item.requestedType as ShiftType]?.label}</bdi>
+        </>
+      ),
+    },
+    { key: "replacement", label: "جایگزین", render: (item) => item.replacement?.name ?? "—" },
+    {
+      key: "status",
+      label: "وضعیت",
+      render: (item) => {
+        const [label, cls] = SWAP_STATUS[item.status] ?? [item.status, ""];
+
+        return <span className={`st-badge ${cls}`}>{label}</span>;
+      },
+    },
+    {
+      key: "details",
+      label: "جزئیات",
+      render: (item) => (
+        <>
+          {item.reason && <div>{item.reason}</div>}
+          {item.decisionNote && <small className="ws-cell-muted">{item.decidedBy}: {item.decisionNote}</small>}
+          {item.history && item.history.length > 0 && <details ><summary>سوابق تصمیم‌ها ({fa(item.history.length)})</summary>{item.history.map((h, i) => <div key={`${item.id}-history-${i}`}>{h.actor} · {h.action === "SUBMITTED" ? "ثبت درخواست" : h.action === "APPROVED" ? "تأیید" : h.action === "REJECTED" ? "رد" : "لغو"}{h.note ? ` — ${h.note}` : ""} · {new Date(h.at).toLocaleString("fa-IR")}</div>)}</details>}
+        </>
+      ),
+    },
+    {
+      key: "actions",
+      label: "عملیات",
+      render: (item) =>
+        item.status === "PENDING_SUPERVISOR" ? (
+          <button type="button" className="st-btn st-btn--danger st-btn--small" onClick={() => cancelSwap(item.id)}>
+            لغو درخواست
+          </button>
+        ) : null,
+    },
+  ];
+
   return (
     <>
       {error && <div className="st-alert st-alert--error" role="alert">{error}</div>}
       {success && <div className="st-alert st-alert--ok" role="status">{success}</div>}
 
-      <CrudCard title="تقویم شیفت من">
-        <div className="st-toolbar">
-          <div className="st-nav">
-            <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => move(-1)} aria-label="قبلی">›</button>
-            <strong>{title}</strong>
-            <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => move(1)} aria-label="بعدی">‹</button>
-            <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => setAnchor(today)}>امروز</button>
+      {section === "calendar" && (
+        <CrudCard title="تقویم شیفت من">
+          <div className="st-toolbar">
+            <div className="st-nav">
+              <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => move(-1)} aria-label="قبلی">›</button>
+              <strong>{title}</strong>
+              <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => move(1)} aria-label="بعدی">‹</button>
+              <button type="button" className="st-btn st-btn--ghost st-btn--small" onClick={() => setAnchor(today)}>امروز</button>
+            </div>
+
+            <div className="st-actions">
+              <button type="button" className={`st-btn st-btn--small ${view === "month" ? "" : "st-btn--ghost"}`} onClick={() => setView("month")}>ماهانه</button>
+              <button type="button" className={`st-btn st-btn--small ${view === "week" ? "" : "st-btn--ghost"}`} onClick={() => setView("week")}>هفتگی</button>
+            </div>
           </div>
 
-          <div className="st-actions">
-            <button type="button" className={`st-btn st-btn--small ${view === "month" ? "" : "st-btn--ghost"}`} onClick={() => setView("month")}>ماهانه</button>
-            <button type="button" className={`st-btn st-btn--small ${view === "week" ? "" : "st-btn--ghost"}`} onClick={() => setView("week")}>هفتگی</button>
-          </div>
+          <Legend />
+
+          {view === "month" ? (
+            <div className="sh-month">
+              {WEEKDAY_NAMES.map((n) => (
+                <div key={n} className="sh-month__head">{WEEKDAY_SHORT[WEEKDAY_NAMES.indexOf(n)]}</div>
+              ))}
+
+              {Array.from({ length: weekdayIndex(range.start) }, (_, i) => (
+                <div key={`b${i}`} className="sh-day sh-day--blank" />
+              ))}
+
+              {Array.from({ length: range.days }, (_, i) => {
+                const date = addDaysStr(range.start, i);
+                const type = cells[date];
+
+                return (
+                  <button
+                    type="button"
+                    key={date}
+                    className={`sh-day ${date === today ? "sh-day--today" : ""} ${weekdayIndex(date) === 6 ? "sh-day--friday" : ""}`}
+                    onClick={() => {
+                      setSwapDate(date);
+                      onPickDate?.();
+                    }}
+                    title="انتخاب برای درخواست جابه‌جایی"
+                  >
+                    <span className="sh-day__num">{toJalali(date).jd.toLocaleString("fa-IR")}</span>
+                    <ShiftChip type={type} compact />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="sh-week">
+              {Array.from({ length: 7 }, (_, i) => {
+                const date = addDaysStr(range.start, i);
+
+                return (
+                  <div key={date} className={`sh-week__row ${date === today ? "sh-day--today" : ""}`}>
+                    <div>
+                      <strong>{WEEKDAY_NAMES[i]}</strong>
+                      <small>{formatJalali(date)}</small>
+                    </div>
+                    <ShiftChip type={cells[date]} showTime />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CrudCard>
+      )}
+
+      {section === "swaps" && (
+        <CrudCard title="درخواست‌های جابه‌جایی شیفت من" description={`تعداد درخواست‌های ثبت‌شده: ${fa(swaps.length)}`}>
+          <WorkToolbar search={query} onSearch={setQuery} actionLabel="درخواست جابه‌جایی جدید" onAction={() => onFormOpenChange?.(!formOpen)} actionOpen={!!formOpen} />
+
+          <CreatePanel
+            open={!!formOpen}
+            title="درخواست جابه‌جایی شیفت"
+            description="تاریخ را انتخاب کنید؛ شیفت آن روز نمایش داده می‌شود. شیفت جدید و در صورت نیاز جایگزین را مشخص کنید."
+          >
+    <form onSubmit={submitSwap}>
+      <div className="st-row">
+        <div className="st-field">
+          <label>تاریخ</label>
+          <JalaliDateSelect value={swapDate} onChange={setSwapDate} />
         </div>
 
-        <Legend />
+        <div className="st-field">
+          <label>شیفت فعلی در این روز</label>
+          <div>
+            {swapCurrent ? <ShiftChip type={swapCurrent} showTime /> : <span className="st-note">برای این روز شیفتی ثبت نشده است.</span>}
+          </div>
+        </div>
+      </div>
 
-        {view === "month" ? (
-          <div className="sh-month">
-            {WEEKDAY_NAMES.map((n) => (
-              <div key={n} className="sh-month__head">{WEEKDAY_SHORT[WEEKDAY_NAMES.indexOf(n)]}</div>
+      <div className="st-row">
+        <div className="st-field">
+          <label>تغییر به</label>
+          <select className="st-select" value={requested} onChange={(e) => setRequested(e.target.value as ShiftType)} required disabled={!canSwap}>
+            <option value="">انتخاب شیفت جدید</option>
+            {SHIFT_TYPES.filter((t) => t !== swapCurrent && t !== "LEAVE" && t !== "ABSENT").map((t) => (
+              <option key={t} value={t}>
+                {SHIFT_META[t].label} — {SHIFT_META[t].title} {shiftRangeText(t)}
+              </option>
             ))}
+          </select>
+        </div>
 
-            {Array.from({ length: weekdayIndex(range.start) }, (_, i) => (
-              <div key={`b${i}`} className="sh-day sh-day--blank" />
+        <div className="st-field">
+          <label>جایگزین (اختیاری)</label>
+          <select className="st-select" value={replacementId} onChange={(e) => setReplacementId(e.target.value)} disabled={!canSwap}>
+            <option value="">بدون جایگزین</option>
+            {staff.filter((s) => s.id !== myId).map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
+          </select>
+          <small>جایگزین، شیفتی را که واگذار می‌کنید به شیفت خودش اضافه می‌کند.</small>
+        </div>
+      </div>
 
-            {Array.from({ length: range.days }, (_, i) => {
-              const date = addDaysStr(range.start, i);
-              const type = cells[date];
+      <div className="st-field">
+        <label>دلیل (اختیاری)</label>
+        <textarea className="st-textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />
+      </div>
 
-              return (
-                <button
-                  type="button"
-                  key={date}
-                  className={`sh-day ${date === today ? "sh-day--today" : ""} ${weekdayIndex(date) === 6 ? "sh-day--friday" : ""}`}
-                  onClick={() => setSwapDate(date)}
-                  title="انتخاب برای درخواست جابه‌جایی"
-                >
-                  <span className="sh-day__num">{toJalali(date).jd.toLocaleString("fa-IR")}</span>
-                  <ShiftChip type={type} compact />
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="sh-week">
-            {Array.from({ length: 7 }, (_, i) => {
-              const date = addDaysStr(range.start, i);
+      <button type="submit" className="st-btn" disabled={busy || !canSwap || !requested}>
+        ارسال برای تأیید سوپروایزر
+      </button>
+    </form>
+          </CreatePanel>
 
-              return (
-                <div key={date} className={`sh-week__row ${date === today ? "sh-day--today" : ""}`}>
-                  <div>
-                    <strong>{WEEKDAY_NAMES[i]}</strong>
-                    <small>{formatJalali(date)}</small>
-                  </div>
-                  <ShiftChip type={cells[date]} showTime />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CrudCard>
-
-      <div style={{ height: 18 }} />
-
-      <CrudCard title="درخواست جابه‌جایی شیفت" description="تاریخ را انتخاب کنید؛ شیفت آن روز نمایش داده می‌شود. شیفت جدید و در صورت نیاز جایگزین را مشخص کنید.">
-        <form onSubmit={submitSwap}>
-          <div className="st-row">
-            <div className="st-field">
-              <label>تاریخ</label>
-              <JalaliDateSelect value={swapDate} onChange={setSwapDate} />
-            </div>
-
-            <div className="st-field">
-              <label>شیفت فعلی در این روز</label>
-              <div>
-                {swapCurrent ? <ShiftChip type={swapCurrent} showTime /> : <span className="st-note">برای این روز شیفتی ثبت نشده است.</span>}
-              </div>
-            </div>
-          </div>
-
-          <div className="st-row">
-            <div className="st-field">
-              <label>تغییر به</label>
-              <select className="st-select" value={requested} onChange={(e) => setRequested(e.target.value as ShiftType)} required disabled={!canSwap}>
-                <option value="">انتخاب شیفت جدید</option>
-                {SHIFT_TYPES.filter((t) => t !== swapCurrent && t !== "LEAVE" && t !== "ABSENT").map((t) => (
-                  <option key={t} value={t}>
-                    {SHIFT_META[t].label} — {SHIFT_META[t].title} {shiftRangeText(t)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="st-field">
-              <label>جایگزین (اختیاری)</label>
-              <select className="st-select" value={replacementId} onChange={(e) => setReplacementId(e.target.value)} disabled={!canSwap}>
-                <option value="">بدون جایگزین</option>
-                {staff.filter((s) => s.id !== myId).map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <small>جایگزین، شیفتی را که واگذار می‌کنید به شیفت خودش اضافه می‌کند.</small>
-            </div>
-          </div>
-
-          <div className="st-field">
-            <label>دلیل (اختیاری)</label>
-            <textarea className="st-textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />
-          </div>
-
-          <button type="submit" className="st-btn" disabled={busy || !canSwap || !requested}>
-            ارسال برای تأیید سوپروایزر
-          </button>
-        </form>
-      </CrudCard>
-
-      <div style={{ height: 18 }} />
-
-      <CrudCard title="درخواست‌های جابه‌جایی من">
-        {swaps.length === 0 ? (
-          <div className="st-empty">درخواستی ثبت نشده است.</div>
-        ) : (
-          <div className="st-card-list">
-            {swaps.map((s) => {
-              const [label, cls] = SWAP_STATUS[s.status] ?? [s.status, ""];
-
-              return (
-                <article key={s.id} className="st-item">
-                  <header>
-                    <div>
-                      <strong>{formatJalali(s.date, true)}</strong>
-                      <small>
-                        <bdi>{SHIFT_META[s.currentType as ShiftType]?.label}</bdi> ← <bdi>{SHIFT_META[s.requestedType as ShiftType]?.label}</bdi>
-                        {s.replacement ? ` · جایگزین: ${s.replacement.name}` : ""}
-                      </small>
-                    </div>
-                    <span className={`st-badge ${cls}`}>{label}</span>
-                  </header>
-
-                  {s.reason && <div className="st-note">{s.reason}</div>}
-                  {s.decisionNote && <div className="st-note">{s.decidedBy}: {s.decisionNote}</div>}
-                  {s.history && s.history.length > 0 && <details className="st-note"><summary>سوابق تصمیم‌ها ({fa(s.history.length)})</summary>{s.history.map((h, i) => <div key={`${s.id}-history-${i}`}>{h.actor} · {h.action === "SUBMITTED" ? "ثبت درخواست" : h.action === "APPROVED" ? "تأیید" : h.action === "REJECTED" ? "رد" : "لغو"}{h.note ? ` — ${h.note}` : ""} · {new Date(h.at).toLocaleString("fa-IR")}</div>)}</details>}
-
-                  {s.status === "PENDING_SUPERVISOR" && (
-                    <div className="st-actions">
-                      <button type="button" className="st-btn st-btn--danger st-btn--small" onClick={() => cancelSwap(s.id)}>
-                        لغو درخواست
-                      </button>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-        <p className="st-note" style={{ marginTop: 12 }}>
-          تعداد درخواست‌های ثبت‌شده: {fa(swaps.length)}
-        </p>
-      </CrudCard>
+          <DataTable
+            rows={swaps.filter((item) => matchesQuery(swapSearchText(item), query))}
+            rowKey={(item) => item.id}
+            empty={swaps.length ? "موردی با این جست‌وجو پیدا نشد." : "درخواستی ثبت نشده است."}
+            columns={swapColumns}
+          />
+        </CrudCard>
+      )}
     </>
   );
 }

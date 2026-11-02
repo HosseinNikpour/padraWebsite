@@ -185,3 +185,124 @@
       background: #d5e0ea;
     }
 }
+
+/* دکمه منوی موبایل */
+.mobile-menu-button {
+  display: none;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent !important;
+  color: #fff;
+  cursor: pointer;
+}
+
+.mobile-menu-button span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+  transition: transform 0.25s ease;
+}
+
+/* منوی موبایل */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .site-header {
+    height: 70px;
+  }
+
+  .desktop-nav,
+  .header-icons {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 0;
+  }
+
+  .mobile-nav {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    padding: 12px 24px 20px;
+    background: #1769ff;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+  }
+
+  .mobile-nav > a {
+    display: block;
+    padding: 13px 8px;
+    color: #fff;
+    font-size: 16px;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .mobile-nav > a:hover {
+    color: #dee948;
+  }
+
+  .mobile-header-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding-top: 18px;
+  }
+
+  .mobile-header-icons a {
+    color: #fff;
+  }
+
+  .mobile-header-icons svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+}
+.mobile-account-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 8px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mobile-account-link svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.mobile-account-link:hover {
+  color: #dee948;
+}

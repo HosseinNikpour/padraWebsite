@@ -163,7 +163,7 @@ export default function Header() {
 
       </div>
 
-      {/* {open && (
+      {open && (
         <nav className="mobile-nav">
 
           {menuItems.map((item) => (
@@ -175,7 +175,14 @@ export default function Header() {
               {item.label}
             </a>
           ))}
-
+<a
+  href={accountLink.href}
+  onClick={closeMenu}
+  className="mobile-account-link"
+>
+  <LoginIcon />
+  <span>{accountLink.label}</span>
+</a>
           <div className="mobile-header-icons">
 
             <a href="#" aria-label="اینستاگرام">
@@ -197,7 +204,7 @@ export default function Header() {
           </div>
 
         </nav>
-      )} */}
+      )}
     </header>
   );
 }

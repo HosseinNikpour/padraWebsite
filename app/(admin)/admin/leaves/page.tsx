@@ -11,6 +11,8 @@ import { nowInTehran } from "@/lib/availability";
 import { fa } from "@/lib/format";
 import { addDaysStr, formatJalali, jalaliShort, monthRange, toJalali, JALALI_MONTHS } from "@/lib/jalali";
 import { LEAVE_STATUS_LABEL, LEAVE_TYPES } from "@/lib/leave";
+import { CreatePanel, DataTable, WorkTabs, WorkToolbar, type Column, type WorkTab } from "@/components/staff/Workspace";
+import { matchesQuery } from "@/lib/search";
 import { useStaffMe } from "@/lib/use-staff-me";
 
 type Leave = {
@@ -39,56 +41,96 @@ function rangeText(l: Leave) {
     : `${jalaliShort(l.startDate)} تا ${formatJalali(l.endDate)}`;
 }
 
-function LeaveCard({
-  leave,
-  showUser,
-  actions,
-}: {
-  leave: Leave;
-  showUser?: boolean;
-  actions?: React.ReactNode;
-}) {
+function leaveKind(leave: Leave) {
+  return LEAVE_TYPES[leave.type] ?? (leave.type === "MIXED" ? "مرخصی ترکیبی" : "مرخصی");
+}
+
+function leaveCount(leave: Leave) {
+  return leave.type === "HOURLY"
+    ? `${fa(leave.entries?.length ?? 0)} ردیف ساعتی`
+    : leave.type === "MIXED"
+      ? `${fa(leave.days)} روز غیرساعتی + ${fa((leave.entries ?? []).filter((e) => (e.type ?? leave.type) === "HOURLY").length)} ردیف ساعتی`
+      : `${fa(leave.days)} روز`;
+}
+
+function leaveDates(leave: Leave) {
+  return leave.entries && leave.entries.length > 0
+    ? leave.entries
+        .map((e) => `${formatJalali(e.date, true)} · ${LEAVE_TYPES[e.type ?? leave.type] ?? "مرخصی"}${e.startTime && e.endTime ? ` (${e.startTime} تا ${e.endTime})` : ""}`)
+        .join("، ")
+    : rangeText(leave);
+}
+
+function leaveSearchText(leave: Leave) {
+  return [
+    leave.user.name,
+    leaveKind(leave),
+    leaveCount(leave),
+    leaveDates(leave),
+    leave.startDate,
+    leave.endDate,
+    LEAVE_STATUS_LABEL[leave.status] ?? leave.status,
+    leave.reason ?? "",
+    leave.supervisor?.name ?? "",
+    leave.supervisor?.note ?? "",
+    leave.final?.name ?? "",
+    leave.final?.note ?? "",
+  ].join(" ");
+}
+
+/** توضیحات + تصمیم‌ها + سوابق گردش یک مرخصی (ستون «جزئیات») */
+function LeaveDetails({ leave }: { leave: Leave }) {
   return (
-    <article className="st-item">
-      <header>
-        <div>
-          <strong>{showUser ? leave.user.name : (LEAVE_TYPES[leave.type] ?? (leave.type === "MIXED" ? "مرخصی ترکیبی" : "مرخصی"))}</strong>
-          <small>
-            {showUser ? `${LEAVE_TYPES[leave.type] ?? "مرخصی ترکیبی"} · ` : ""}
-            {leave.type === "HOURLY" ? `${fa(leave.entries?.length ?? 0)} ردیف ساعتی` : leave.type === "MIXED" ? `${fa(leave.days)} روز غیرساعتی + ${fa((leave.entries ?? []).filter((e) => (e.type ?? leave.type) === "HOURLY").length)} ردیف ساعتی` : `${fa(leave.days)} روز`}
-          </small>
-        </div>
-        <span className={`st-badge ${statusClass(leave.status)}`}>{LEAVE_STATUS_LABEL[leave.status]}</span>
-      </header>
-
-      <dl>
-        <div>
-          <dt>تاریخ‌ها</dt>
-          <dd>{leave.entries && leave.entries.length > 0 ? leave.entries.map((e) => `${formatJalali(e.date, true)} · ${LEAVE_TYPES[e.type ?? leave.type] ?? "مرخصی"}${e.startTime && e.endTime ? ` (${e.startTime} تا ${e.endTime})` : ""}`).join("، ") : rangeText(leave)}</dd>
-        </div>
-      </dl>
-
-      {leave.reason && <div className="st-note">{leave.reason}</div>}
+    <>
+      {leave.reason && <div>{leave.reason}</div>}
 
       {leave.supervisor && leave.supervisor.decision !== "SKIPPED" && (
-        <div className="st-note">
-          سوپروایزر{leave.supervisor.name ? ` (${leave.supervisor.name})` : ""}:{" "}
-          {leave.supervisor.decision === "APPROVED" ? "تأیید" : "رد"}
+        <small className="ws-cell-muted">
+          سوپروایزر{leave.supervisor.name ? ` (${leave.supervisor.name})` : ""}: {leave.supervisor.decision === "APPROVED" ? "تأیید" : "رد"}
           {leave.supervisor.note ? ` — ${leave.supervisor.note}` : ""}
-        </div>
+        </small>
       )}
 
       {leave.final && (
-        <div className="st-note">
+        <small className="ws-cell-muted">
           مدیر{leave.final.name ? ` (${leave.final.name})` : ""}: {leave.final.decision === "APPROVED" ? "تأیید نهایی" : "رد"}
           {leave.final.note ? ` — ${leave.final.note}` : ""}
-        </div>
+        </small>
       )}
-      {leave.history && leave.history.length > 0 && <details className="st-note"><summary>سوابق گردش و تصمیم‌ها ({fa(leave.history.length)})</summary>{leave.history.map((h, i) => <div key={`${leave.id}-history-${i}`}>{h.actor} · {h.action === "SUBMITTED" ? "ثبت درخواست" : h.action === "APPROVED" ? "تأیید" : h.action === "REJECTED" ? "رد" : "لغو"}{h.note ? ` — ${h.note}` : ""} · {new Date(h.at).toLocaleString("fa-IR")}</div>)}</details>}
 
-      {actions}
-    </article>
+      {leave.history && leave.history.length > 0 && (
+        <details>
+          <summary>سوابق گردش ({fa(leave.history.length)})</summary>
+          {leave.history.map((h, i) => (
+            <div key={`${leave.id}-history-${i}`}>
+              {h.actor} · {h.action === "SUBMITTED" ? "ثبت درخواست" : h.action === "APPROVED" ? "تأیید" : h.action === "REJECTED" ? "رد" : "لغو"}
+              {h.note ? ` — ${h.note}` : ""} · {new Date(h.at).toLocaleString("fa-IR")}
+            </div>
+          ))}
+        </details>
+      )}
+    </>
   );
+}
+
+function leaveColumns({ showUser, actions }: { showUser?: boolean; actions?: (leave: Leave) => React.ReactNode }): Column<Leave>[] {
+  return [
+    ...(showUser ? [{ key: "user", label: "پرسنل", render: (l: Leave) => <strong>{l.user.name}</strong> }] : []),
+    {
+      key: "kind",
+      label: "نوع مرخصی",
+      render: (l: Leave) => (
+        <>
+          {leaveKind(l)}
+          <small className="ws-cell-muted">{leaveCount(l)}</small>
+        </>
+      ),
+    },
+    { key: "dates", label: "تاریخ‌ها", render: (l: Leave) => leaveDates(l) },
+    { key: "status", label: "وضعیت", render: (l: Leave) => <span className={`st-badge ${statusClass(l.status)}`}>{LEAVE_STATUS_LABEL[l.status]}</span> },
+    { key: "details", label: "جزئیات و تصمیم‌ها", render: (l: Leave) => <LeaveDetails leave={l} /> },
+    ...(actions ? [{ key: "actions", label: "عملیات", render: (l: Leave) => actions(l) }] : []),
+  ];
 }
 
 export default function LeavesPage() {
@@ -115,6 +157,8 @@ export default function LeavesPage() {
   const [fy, setFy] = useState(todayJ.jy);
   const [fm, setFm] = useState(todayJ.jm);
   const [fStatus, setFStatus] = useState("");
+  const [query, setQuery] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const canApprove = !!can && (can.leaveSupervise || can.leaveFinal);
 
@@ -192,6 +236,7 @@ export default function LeavesPage() {
       setSuccess("درخواست مرخصی ثبت شد و برای تأیید ارسال گردید.");
       setReason("");
       setEntries([{ date: today, type: "DAILY", startTime: "10:00", endTime: "11:00" }]);
+      setShowForm(false);
       await loadMine();
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا در ثبت درخواست");
@@ -275,6 +320,28 @@ export default function LeavesPage() {
     </>
   );
 
+  const tabs: WorkTab<Tab>[] = [
+    { key: "mine", label: "درخواست‌های من", badge: pendingMine.length },
+    { key: "taken", label: "مرخصی‌های استفاده‌شده" },
+    ...(canApprove ? [{ key: "approvals" as Tab, label: "تأیید درخواست‌ها", badge: approvals.length }] : []),
+    ...(can?.leaveViewAll ? [{ key: "all" as Tab, label: "مرخصی پرسنل" }] : []),
+  ];
+
+  const changeTab = (next: Tab) => {
+    setTab(next);
+    setQuery("");
+    setShowForm(false);
+  };
+
+  const filter = (rows: Leave[]) => rows.filter((l) => matchesQuery(leaveSearchText(l), query));
+
+  const cancelAction = (label: string, allowed: (l: Leave) => boolean) => (l: Leave) =>
+    allowed(l) ? (
+      <button type="button" className="st-btn st-btn--danger st-btn--small" disabled={busy} onClick={() => act(l.id, "cancel")}>
+        {label}
+      </button>
+    ) : null;
+
   return (
     <CrudPage
       eyebrow="PADRA STAFF"
@@ -282,147 +349,105 @@ export default function LeavesPage() {
       description="ثبت درخواست مرخصی، پیگیری تأییدها و مشاهده‌ی مرخصی‌های استفاده‌شده"
     >
       <div className="leave-management-page">
-      {error && <div className="st-alert st-alert--error" role="alert">{error}</div>}
-      {success && <div className="st-alert st-alert--ok" role="status">{success}</div>}
+        {error && <div className="st-alert st-alert--error" role="alert">{error}</div>}
+        {success && <div className="st-alert st-alert--ok" role="status">{success}</div>}
 
-      <div className="st-tabs" role="tablist">
-        <button type="button" className={tab === "mine" ? "active" : ""} onClick={() => setTab("mine")}>
-          درخواست‌های من{pendingMine.length > 0 && <span>{fa(pendingMine.length)}</span>}
-        </button>
-        <button type="button" className={tab === "taken" ? "active" : ""} onClick={() => setTab("taken")}>
-          مرخصی‌های استفاده‌شده
-        </button>
-        {canApprove && (
-          <button type="button" className={tab === "approvals" ? "active" : ""} onClick={() => setTab("approvals")}>
-            تأیید درخواست‌ها{approvals.length > 0 && <span>{fa(approvals.length)}</span>}
-          </button>
-        )}
-        {can?.leaveViewAll && (
-          <button type="button" className={tab === "all" ? "active" : ""} onClick={() => setTab("all")}>
-            مرخصی همه‌ی پرسنل
-          </button>
-        )}
-      </div>
+        <WorkTabs tabs={tabs} value={tab} onChange={changeTab} />
 
-      {tab === "mine" && (
-        <>
-          <CrudCard
-            title="ثبت درخواست مرخصی"
-            description={
-              can?.leaveSupervise
-                ? "درخواست شما مستقیم برای تأیید نهایی مدیر ارسال می‌شود."
-                : "درخواست ابتدا نزد سوپروایزر و سپس برای تأیید نهایی نزد مدیر می‌رود."
-            }
-          >
-            <form onSubmit={submit}>
-              <div className="leave-summary-strip">
-                <span><strong>{fa(days)}</strong> ردیف روزانه/استعلاجی</span>
-                <span><strong>{fa(hourlyRows)}</strong> ردیف ساعتی</span>
-                <span className="leave-summary-hint">نوع و تاریخ هر ردیف جداگانه قابل انتخاب است.</span>
-              </div>
-
-              <div className="st-field">
-                <label>ردیف‌های مرخصی</label>
-                <div className="st-card-list leave-entry-list">
-                  {entries.map((entry, index) => (
-                    <div className="leave-entry-card" key={`leave-entry-${index}`}>
-                      <div className="leave-entry-heading"><span>ردیف {fa(index + 1)}</span>{entries.length > 1 && <button type="button" className="leave-delete-icon" aria-label={`حذف ردیف ${index + 1}`} title="حذف ردیف" onClick={() => setEntries((old) => old.filter((_, i) => i !== index))}><Trash2 size={16} /></button>}</div>
-                      <div className="leave-entry-fields">
-                        <div className="st-field">
-                          <label>تاریخ</label>
-                          <JalaliDateSelect value={entry.date} onChange={(date) => setEntries((old) => old.map((item, i) => i === index ? { ...item, date } : item))} />
-                        </div>
-                        <div className="st-field">
-                          <label>نوع مرخصی</label>
-                          <select className="st-select" value={entry.type} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, type: e.target.value } : item))}>
-                             <option value="DAILY">روزانه</option><option value="HOURLY">ساعتی</option><option value="SICK">استعلاجی</option>
-                          </select>
-                        </div>
-                        {entry.type === "HOURLY" && <>
-                          <div className="st-field"><label>ساعت شروع</label><input className="st-input" type="time" value={entry.startTime} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, startTime: e.target.value } : item))} /></div>
-                          <div className="st-field"><label>ساعت پایان</label><input className="st-input" type="time" value={entry.endTime} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, endTime: e.target.value } : item))} /></div>
-                        </>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button type="button" className="st-btn st-btn--ghost st-btn--small leave-add-row" onClick={() => setEntries((old) => [...old, { date: addDaysStr(old[old.length - 1]?.date ?? today, 1), type: old[old.length - 1]?.type ?? "DAILY", startTime: "10:00", endTime: "11:00" }])}><Plus size={16} /> افزودن ردیف مرخصی</button>
-              </div>
-
-              <div className="st-field">
-                <label>توضیحات (اختیاری)</label>
-                <textarea className="st-textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />
-              </div>
-
-              <button type="submit" className="st-btn" disabled={busy}>
-                ثبت درخواست
-              </button>
-            </form>
-          </CrudCard>
-
-          <div style={{ height: 18 }} />
-
+        {tab === "mine" && (
           <CrudCard title="درخواست‌های من" description={`مرخصی‌های تأییدشده‌ی پیش‌رو: ${fa(upcoming.length)}`}>
-            {mine.length === 0 ? (
-              <div className="st-empty">هنوز درخواستی ثبت نکرده‌اید.</div>
-            ) : (
-              <div className="st-card-list">
-                {mine.map((l) => (
-                  <LeaveCard
-                    key={l.id}
-                    leave={l}
-                    actions={
-                      (l.status === "PENDING_SUPERVISOR" || l.status === "PENDING_MANAGER") && (
-                        <div className="st-actions">
-                          <button type="button" className="st-btn st-btn--danger st-btn--small" disabled={busy} onClick={() => act(l.id, "cancel")}>
-                            لغو درخواست
-                          </button>
-                        </div>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            )}
+            <WorkToolbar search={query} onSearch={setQuery} actionLabel="درخواست مرخصی جدید" onAction={() => setShowForm((v) => !v)} actionOpen={showForm} />
+
+            <CreatePanel
+              open={showForm}
+              title="ثبت درخواست مرخصی"
+              description={can?.leaveSupervise ? "درخواست شما مستقیم برای تأیید نهایی مدیر ارسال می‌شود." : "درخواست ابتدا نزد سوپروایزر و سپس برای تأیید نهایی نزد مدیر می‌رود."}
+            >
+        <form onSubmit={submit}>
+          <div className="leave-summary-strip">
+            <span><strong>{fa(days)}</strong> ردیف روزانه/استعلاجی</span>
+            <span><strong>{fa(hourlyRows)}</strong> ردیف ساعتی</span>
+            <span className="leave-summary-hint">نوع و تاریخ هر ردیف جداگانه قابل انتخاب است.</span>
+          </div>
+
+          <div className="st-field">
+            <label>ردیف‌های مرخصی</label>
+            <div className="st-card-list leave-entry-list">
+              {entries.map((entry, index) => (
+                <div className="leave-entry-card" key={`leave-entry-${index}`}>
+                  <div className="leave-entry-heading"><span>ردیف {fa(index + 1)}</span>{entries.length > 1 && <button type="button" className="leave-delete-icon" aria-label={`حذف ردیف ${index + 1}`} title="حذف ردیف" onClick={() => setEntries((old) => old.filter((_, i) => i !== index))}><Trash2 size={16} /></button>}</div>
+                  <div className="leave-entry-fields">
+                    <div className="st-field">
+                      <label>تاریخ</label>
+                      <JalaliDateSelect value={entry.date} onChange={(date) => setEntries((old) => old.map((item, i) => i === index ? { ...item, date } : item))} />
+                    </div>
+                    <div className="st-field">
+                      <label>نوع مرخصی</label>
+                      <select className="st-select" value={entry.type} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, type: e.target.value } : item))}>
+                         <option value="DAILY">روزانه</option><option value="HOURLY">ساعتی</option><option value="SICK">استعلاجی</option>
+                      </select>
+                    </div>
+                    {entry.type === "HOURLY" && <>
+                      <div className="st-field"><label>ساعت شروع</label><input className="st-input" type="time" value={entry.startTime} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, startTime: e.target.value } : item))} /></div>
+                      <div className="st-field"><label>ساعت پایان</label><input className="st-input" type="time" value={entry.endTime} onChange={(e) => setEntries((old) => old.map((item, i) => i === index ? { ...item, endTime: e.target.value } : item))} /></div>
+                    </>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="st-btn st-btn--ghost st-btn--small leave-add-row" onClick={() => setEntries((old) => [...old, { date: addDaysStr(old[old.length - 1]?.date ?? today, 1), type: old[old.length - 1]?.type ?? "DAILY", startTime: "10:00", endTime: "11:00" }])}><Plus size={16} /> افزودن ردیف مرخصی</button>
+          </div>
+
+          <div className="st-field">
+            <label>توضیحات (اختیاری)</label>
+            <textarea className="st-textarea" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />
+          </div>
+
+          <button type="submit" className="st-btn" disabled={busy}>
+            ثبت درخواست
+          </button>
+        </form>
+            </CreatePanel>
+
+            <DataTable
+              rows={filter(mine)}
+              rowKey={(l) => l.id}
+              empty={mine.length ? "موردی با این جست‌وجو پیدا نشد." : "هنوز درخواستی ثبت نکرده‌اید."}
+              columns={leaveColumns({ actions: cancelAction("لغو درخواست", (l) => l.status === "PENDING_SUPERVISOR" || l.status === "PENDING_MANAGER") })}
+            />
           </CrudCard>
-        </>
-      )}
+        )}
 
-      {tab === "taken" && (
-        <CrudCard
-          title="مرخصی‌های استفاده‌شده"
-          description={`مجموع روزهای مرخصی تأییدشده‌ی استفاده‌شده در سال ${todayJ.jy.toLocaleString("fa-IR", { useGrouping: false })}: ${fa(usedThisYear)} روز`}
-        >
-          {taken.length === 0 ? (
-            <div className="st-empty">هنوز مرخصی تأییدشده‌ای را استفاده نکرده‌اید.</div>
-          ) : (
-            <div className="st-card-list">
-              {taken.map((l) => (
-                <LeaveCard key={l.id} leave={l} />
-              ))}
-            </div>
-          )}
-        </CrudCard>
-      )}
+        {tab === "taken" && (
+          <CrudCard
+            title="مرخصی‌های استفاده‌شده"
+            description={`مجموع روزهای مرخصی تأییدشده‌ی استفاده‌شده در سال ${todayJ.jy.toLocaleString("fa-IR", { useGrouping: false })}: ${fa(usedThisYear)} روز`}
+          >
+            <WorkToolbar search={query} onSearch={setQuery} />
+            <DataTable
+              rows={filter(taken)}
+              rowKey={(l) => l.id}
+              empty={taken.length ? "موردی با این جست‌وجو پیدا نشد." : "هنوز مرخصی تأییدشده‌ای را استفاده نکرده‌اید."}
+              columns={leaveColumns({})}
+            />
+          </CrudCard>
+        )}
 
-      {tab === "approvals" && canApprove && (
-        <CrudCard title="درخواست‌های در انتظار تصمیم شما" description="درخواست‌های سوپروایزر مرحله‌ی اول دارد و تأیید نهایی با مدیر است.">
-          {approvals.length === 0 ? (
-            <div className="st-empty">درخواستی در انتظار تصمیم شما نیست.</div>
-          ) : (
-            <div className="st-card-list">
-              {approvals.map((l) => (
-                <LeaveCard key={l.id} leave={l} showUser actions={decisionActions(l)} />
-              ))}
-            </div>
-          )}
-        </CrudCard>
-      )}
+        {tab === "approvals" && canApprove && (
+          <CrudCard title="درخواست‌های در انتظار تصمیم شما" description="درخواست‌های سوپروایزر مرحله‌ی اول دارد و تأیید نهایی با مدیر است.">
+            <WorkToolbar search={query} onSearch={setQuery} />
+            <DataTable
+              rows={filter(approvals)}
+              rowKey={(l) => l.id}
+              empty={approvals.length ? "موردی با این جست‌وجو پیدا نشد." : "درخواستی در انتظار تصمیم شما نیست."}
+              columns={leaveColumns({ showUser: true, actions: decisionActions })}
+            />
+          </CrudCard>
+        )}
 
-      {tab === "all" && can?.leaveViewAll && (
-        <CrudCard title="مرخصی همه‌ی پرسنل">
-          <div className="st-toolbar">
-            <div className="st-nav">
+        {tab === "all" && can?.leaveViewAll && (
+          <CrudCard title="مرخصی پرسنل">
+            <WorkToolbar search={query} onSearch={setQuery}>
               <select className="st-select" value={fm} onChange={(e) => setFm(Number(e.target.value))} aria-label="ماه">
                 {JALALI_MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
@@ -433,41 +458,26 @@ export default function LeavesPage() {
                   <option key={y} value={y}>{y.toLocaleString("fa-IR", { useGrouping: false })}</option>
                 ))}
               </select>
-            </div>
-
-            <select className="st-select" style={{ maxWidth: 220 }} value={fStatus} onChange={(e) => setFStatus(e.target.value)} aria-label="وضعیت">
-              <option value="">همه‌ی وضعیت‌ها</option>
-              {Object.entries(LEAVE_STATUS_LABEL).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </div>
-
-          {filteredAll.length === 0 ? (
-            <div className="st-empty">مرخصی‌ای در این ماه پیدا نشد.</div>
-          ) : (
-            <div className="st-card-list">
-              {filteredAll.map((l) => (
-                <LeaveCard
-                  key={l.id}
-                  leave={l}
-                  showUser
-                  actions={
-                    can?.leaveFinal &&
-                    (l.status === "APPROVED" || l.status === "PENDING_SUPERVISOR" || l.status === "PENDING_MANAGER") && (
-                      <div className="st-actions">
-                        <button type="button" className="st-btn st-btn--danger st-btn--small" disabled={busy} onClick={() => act(l.id, "cancel")}>
-                          لغو مرخصی
-                        </button>
-                      </div>
-                    )
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </CrudCard>
-      )}
+              <select className="st-select" value={fStatus} onChange={(e) => setFStatus(e.target.value)} aria-label="وضعیت">
+                <option value="">همه‌ی وضعیت‌ها</option>
+                {Object.entries(LEAVE_STATUS_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </WorkToolbar>
+            <DataTable
+              rows={filter(filteredAll)}
+              rowKey={(l) => l.id}
+              empty="مرخصی‌ای در این ماه پیدا نشد."
+              columns={leaveColumns({
+                showUser: true,
+                actions: can?.leaveFinal
+                  ? cancelAction("لغو مرخصی", (l) => l.status === "APPROVED" || l.status === "PENDING_SUPERVISOR" || l.status === "PENDING_MANAGER")
+                  : undefined,
+              })}
+            />
+          </CrudCard>
+        )}
       </div>
     </CrudPage>
   );
