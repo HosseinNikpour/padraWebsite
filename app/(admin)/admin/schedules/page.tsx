@@ -1,667 +1,172 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CrudCard, CrudField, CrudPage } from "@/components/admin/crud/CrudPage";
+import { WEEKDAYS, generateSlots, validateRules, type Rule, type TimeRange } from "@/lib/availability";
+import { fa } from "@/lib/format";
+import "./availability.css";
 
-import DatePicker from "react-multi-date-picker";
-import persian from "react-date-object/calendars/persian";
-import persian_fa from "react-date-object/locales/persian_fa";
-import "./schedule.css";
+type TargetType = "game" | "event";
+type Settings = { durationMinutes: number; gapMinutes: number; minPlayers: number; maxPlayers: number; capacity: number; price: number };
+type Item = { type: TargetType; id: number; name: string; isActive: boolean; settings: Settings; rules: Rule[] };
+type DayConfig = Settings & { ranges: TimeRange[] };
+type WeekConfig = Record<number, DayConfig>;
+const defaults: Settings = { durationMinutes: 20, gapMinutes: 10, minPlayers: 1, maxPlayers: 10, capacity: 10, price: 0 };
 
-type Game = {
-    id: number;
-    name: string;
-};
+function toWeek(rules: Rule[], fallback: Settings): WeekConfig {
+  const week = {} as WeekConfig;
+  for (const day of WEEKDAYS) {
+    const dayRules = rules.filter((r) => r.weekday === day.value);
+    const first = dayRules[0];
+    week[day.value] = {
+      durationMinutes: first?.durationMinutes ?? fallback.durationMinutes,
+      gapMinutes: first?.gapMinutes ?? fallback.gapMinutes,
+      minPlayers: first?.minPlayers ?? fallback.minPlayers,
+      maxPlayers: first?.maxPlayers ?? fallback.maxPlayers,
+      capacity: first?.capacity ?? fallback.capacity ?? fallback.maxPlayers,
+      price: first?.price ?? fallback.price,
+      ranges: dayRules.map(({ startTime, endTime }) => ({ startTime, endTime })),
+    };
+  }
+  return week;
+}
+function toRules(week: WeekConfig): Rule[] {
+  return WEEKDAYS.flatMap((day) => {
+    const config = week[day.value];
+    return config.ranges.map((range) => ({
+      weekday: day.value, ...range,
+      durationMinutes: config.durationMinutes, gapMinutes: config.gapMinutes,
+      minPlayers: config.minPlayers, maxPlayers: config.maxPlayers,
+      capacity: config.capacity, price: config.price,
+    }));
+  });
+}
 
-type Schedule = {
-    id: number;
-    gameId: number;
-    date: string;
-    startTime: string;
-    endTime: string;
-    capacity: number;
-    isActive: boolean;
-    game: Game;
-};
+export default function AdminAvailabilityPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [tab, setTab] = useState<TargetType>("game");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [week, setWeek] = useState<WeekConfig | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-export default function AdminSchedulesPage() {
-    const [games, setGames] = useState<Game[]>([]);
-    const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const load = useCallback(async () => {
+    try {
+      setLoading(true); setLoadError("");
+      const response = await fetch("/api/availability", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "خطا در دریافت اطلاعات");
+      setItems([...data.games, ...data.events]);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "خطا در دریافت اطلاعات");
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
-    const [gameId, setGameId] = useState("");
-    const [date, setDate] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-    const [capacity, setCapacity] = useState("10");
-    const [isActive, setIsActive] = useState(true);
+  const visibleItems = useMemo(() => items.filter((item) => item.type === tab), [items, tab]);
+  const selected = useMemo(() => items.find((item) => item.type === tab && item.id === selectedId) ?? null, [items, tab, selectedId]);
 
-    const [editingId, setEditingId] = useState<number | null>(null);
+  function select(item: Item) {
+    setSelectedId(item.id);
+    setWeek(toWeek(item.rules, { ...defaults, ...item.settings }));
+    setError(""); setSuccess("");
+  }
+  function changeTab(next: TargetType) { setTab(next); setSelectedId(null); setWeek(null); setError(""); setSuccess(""); }
+  function updateDay(day: number, key: keyof Settings, value: string) {
+    setWeek((current) => current ? ({ ...current, [day]: { ...current[day], [key]: Number(value) } }) : current);
+  }
+  function setRanges(day: number, ranges: TimeRange[]) {
+    setWeek((current) => current ? ({ ...current, [day]: { ...current[day], ranges } }) : current);
+  }
+  function updateRange(day: number, index: number, key: keyof TimeRange, value: string) {
+    if (!week) return;
+    setRanges(day, week[day].ranges.map((range, i) => i === index ? { ...range, [key]: value } : range));
+  }
+  function toggleDay(day: number, enabled: boolean) {
+    if (!week) return;
+    setRanges(day, enabled ? [{ startTime: "10:00", endTime: "22:00" }] : []);
+  }
+  function copyToAll(day: number) {
+    if (!week) return;
+    const source = week[day];
+    setWeek(Object.fromEntries(WEEKDAYS.map((d) => [d.value, { ...source, ranges: source.ranges.map((r) => ({ ...r })) }])) as WeekConfig);
+  }
 
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-
-    const [duration, setDuration] = useState("20");
-    const [interval, setInterval] = useState("10");
-
-    const [generating, setGenerating] = useState(false);
-
-    useEffect(() => {
-        loadGames();
-        loadSchedules();
-    }, []);
-
-    async function loadGames() {
-        try {
-            const response = await fetch("/api/games");
-
-            if (!response.ok) {
-                throw new Error("خطا در دریافت بازی‌ها");
-            }
-
-            const data = await response.json();
-
-            const activeGames = data
-                .filter((game: Game & { isActive: boolean }) => game.isActive)
-                .sort(
-                    (
-                        a: Game & { sortOrder: number },
-                        b: Game & { sortOrder: number }
-                    ) => a.sortOrder - b.sortOrder
-                );
-
-            setGames(activeGames);
-        } catch (error) {
-            console.error(error);
-        }
+  async function save() {
+    if (!selected || !week) return;
+    setError(""); setSuccess("");
+    const rules = toRules(week);
+    const rulesError = validateRules(rules);
+    if (rulesError) { setError(rulesError); return; }
+    for (const day of WEEKDAYS) {
+      const d = week[day.value];
+      if (d.minPlayers < 1 || d.maxPlayers < d.minPlayers || d.capacity < Math.max(1, d.minPlayers) || d.durationMinutes < 5 || d.gapMinutes < 0 || d.price < 0) {
+        setError(`تنظیمات روز ${day.label} معتبر نیست.`); return;
+      }
     }
-
-    async function loadSchedules() {
-        try {
-            setLoading(true);
-
-            const response = await fetch("/api/schedules");
-
-            if (!response.ok) {
-                throw new Error("خطا در دریافت سانس‌ها");
-            }
-
-            const data = await response.json();
-
-            setSchedules(data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    function handleDateChange(value: any) {
-        if (!value) {
-            setDate("");
-            return;
-        }
-
-        const gregorianDate = value.toDate();
-
-        const year = gregorianDate.getFullYear();
-        const month = String(
-            gregorianDate.getMonth() + 1
-        ).padStart(2, "0");
-
-        const day = String(
-            gregorianDate.getDate()
-        ).padStart(2, "0");
-
-        setDate(`${year}-${month}-${day}`);
-    }
-
-    async function saveSchedule() {
-        if (
-            !gameId ||
-            !date ||
-            !startTime ||
-            !endTime ||
-            !capacity
-        ) {
-            alert("لطفاً تمام اطلاعات را وارد کنید");
-            return;
-        }
-
-        try {
-            setSaving(true);
-
-            const url = editingId
-                ? `/api/schedules/${editingId}`
-                : "/api/schedules";
-
-            const method = editingId ? "PUT" : "POST";
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    gameId: Number(gameId),
-                    date,
-                    startTime,
-                    endTime,
-                    capacity: Number(capacity),
-                    isActive,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error || "خطا در ذخیره سانس"
-                );
-            }
-
-            resetForm();
-
-            await loadSchedules();
-
-            alert(
-                editingId
-                    ? "سانس با موفقیت ویرایش شد"
-                    : "سانس با موفقیت ایجاد شد"
-            );
-        } catch (error) {
-            console.error(error);
-
-            alert(
-                error instanceof Error
-                    ? error.message
-                    : "خطا در ذخیره سانس"
-            );
-        } finally {
-            setSaving(false);
-        }
-    }
-
-    function editSchedule(schedule: Schedule) {
-        setEditingId(schedule.id);
-
-        setGameId(String(schedule.gameId));
-
-        const date = new Date(schedule.date);
-
-        const year = date.getFullYear();
-        const month = String(
-            date.getMonth() + 1
-        ).padStart(2, "0");
-
-        const day = String(
-            date.getDate()
-        ).padStart(2, "0");
-
-        setDate(`${year}-${month}-${day}`);
-
-        setStartTime(schedule.startTime);
-        setEndTime(schedule.endTime);
-        setCapacity(String(schedule.capacity));
-        setIsActive(schedule.isActive);
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        });
-    }
-
-    async function deleteSchedule(id: number) {
-        if (!confirm("آیا از حذف این سانس مطمئن هستید؟")) {
-            return;
-        }
-
-        try {
-            const response = await fetch(
-                `/api/schedules/${id}`,
-                {
-                    method: "DELETE",
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error("خطا در حذف سانس");
-            }
-
-            await loadSchedules();
-        } catch (error) {
-            console.error(error);
-
-            alert("حذف سانس انجام نشد");
-        }
-    }
-
-    function resetForm() {
-        setEditingId(null);
-        setGameId("");
-        setDate("");
-        setStartTime("");
-        setEndTime("");
-        setCapacity("10");
-        setIsActive(true);
-    }
-
-    function formatDate(dateString: string) {
-        return new Intl.DateTimeFormat("fa-IR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-        }).format(new Date(dateString));
-    }
-    async function generateSchedules() {
-        if (
-            !gameId ||
-            !date ||
-            !startTime ||
-            !endTime ||
-            !duration ||
-            !capacity
-        ) {
-            alert("لطفاً تمام اطلاعات را وارد کنید");
-            return;
-        }
-
-        try {
-            setGenerating(true);
-
-            const response = await fetch(
-                "/api/schedules/generate",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        gameId: Number(gameId),
-                        date,
-                        startTime,
-                        endTime,
-                        duration: Number(duration),
-                        interval: Number(interval),
-                        capacity: Number(capacity),
-                    }),
-                }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error || "خطا در تولید سانس‌ها"
-                );
-            }
-
-            alert(
-                `${data.created.toLocaleString(
-                    "fa-IR"
-                )} سانس ایجاد شد`
-            );
-
-            await loadSchedules();
-        } catch (error) {
-            console.error(error);
-
-            alert(
-                error instanceof Error
-                    ? error.message
-                    : "خطا در تولید سانس‌ها"
-            );
-        } finally {
-            setGenerating(false);
-        }
-    }
-    return (
-        <div className="schedule-admin">
-
-            <div className="schedule-admin-header">
-
-                <div>
-                    <span>BOOKING MANAGEMENT</span>
-
-                    <h1>
-                        مدیریت <strong>سانس‌ها</strong>
-                    </h1>
-
-                    <p>
-                        سانس‌های قابل رزرو بازی‌ها را مدیریت کنید.
-                    </p>
-                </div>
-
-            </div>
-
-            {/* FORM */}
-
-            <div className="schedule-form-grid">
-
-                <div className="schedule-field">
-
-                    <label>بازی</label>
-
-                    <select
-                        value={gameId}
-                        onChange={(e) =>
-                            setGameId(e.target.value)
-                        }
-                    >
-                        <option value="">
-                            انتخاب بازی
-                        </option>
-
-                        {games.map((game) => (
-                            <option
-                                key={game.id}
-                                value={game.id}
-                            >
-                                {game.name}
-                            </option>
-                        ))}
-                    </select>
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>تاریخ</label>
-
-                    <DatePicker
-                        calendar={persian}
-                        locale={persian_fa}
-                        calendarPosition="bottom-right"
-                        format="YYYY/MM/DD"
-                        minDate={new Date()}
-                        onChange={handleDateChange}
-                        inputClass="schedule-date-input"
-                        placeholder="انتخاب تاریخ"
-                    />
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>شروع فعالیت</label>
-
-                    <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) =>
-                            setStartTime(e.target.value)
-                        }
-                    />
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>پایان فعالیت</label>
-
-                    <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) =>
-                            setEndTime(e.target.value)
-                        }
-                    />
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>مدت هر سانس</label>
-
-                    <select
-                        value={duration}
-                        onChange={(e) =>
-                            setDuration(e.target.value)
-                        }
-                    >
-                        <option value="10">۱۰ دقیقه</option>
-                        <option value="15">۱۵ دقیقه</option>
-                        <option value="20">۲۰ دقیقه</option>
-                        <option value="30">۳۰ دقیقه</option>
-                        <option value="45">۴۵ دقیقه</option>
-                        <option value="60">۶۰ دقیقه</option>
-                    </select>
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>فاصله بین سانس‌ها</label>
-
-                    <select
-                        value={interval}
-                        onChange={(e) =>
-                            setInterval(e.target.value)
-                        }
-                    >
-                        <option value="0">
-                            بدون فاصله
-                        </option>
-
-                        <option value="5">
-                            ۵ دقیقه
-                        </option>
-
-                        <option value="10">
-                            ۱۰ دقیقه
-                        </option>
-
-                        <option value="15">
-                            ۱۵ دقیقه
-                        </option>
-
-                        <option value="20">
-                            ۲۰ دقیقه
-                        </option>
-
-                        <option value="30">
-                            ۳۰ دقیقه
-                        </option>
-                    </select>
-
-                </div>
-
-
-                <div className="schedule-field">
-
-                    <label>ظرفیت هر سانس</label>
-
-                    <input
-                        type="number"
-                        min="1"
-                        value={capacity}
-                        onChange={(e) =>
-                            setCapacity(e.target.value)
-                        }
-                    />
-
-                </div>
-
-            </div>
-
-
-            <div className="schedule-generate-info">
-
-                <div>
-                    <strong>تولید خودکار سانس‌ها</strong>
-
-                    <span>
-                        سیستم بر اساس ساعت شروع، پایان، مدت بازی و
-                        فاصله تعیین‌شده سانس‌ها را ایجاد می‌کند.
-                    </span>
-                </div>
-
-            </div>
-
-
-            <div className="schedule-form-actions">
-
-                <button
-                    type="button"
-                    className="schedule-save-button"
-                    onClick={generateSchedules}
-                    disabled={generating}
-                >
-                    {generating
-                        ? "در حال ایجاد سانس‌ها..."
-                        : "تولید سانس‌ها"}
-
-                    {!generating && <span>←</span>}
-                </button>
-
-            </div>
-
-            {/* LIST */}
-
-            <section className="schedule-list-card">
-
-                <div className="schedule-list-header">
-
-                    <div>
-                        <span>ALL SCHEDULES</span>
-
-                        <h2>
-                            لیست سانس‌ها
-                        </h2>
-                    </div>
-
-                    <div className="schedule-count">
-                        {schedules.length.toLocaleString("fa-IR")}
-                        <span>سانس</span>
-                    </div>
-
-                </div>
-
-                {loading ? (
-
-                    <div className="schedule-empty">
-                        در حال دریافت سانس‌ها...
-                    </div>
-
-                ) : schedules.length === 0 ? (
-
-                    <div className="schedule-empty">
-                        هنوز هیچ سانسی ایجاد نشده است.
-                    </div>
-
-                ) : (
-
-                    <div className="schedule-table-wrapper">
-
-                        <table className="schedule-table">
-
-                            <thead>
-                                <tr>
-                                    <th>بازی</th>
-                                    <th>تاریخ</th>
-                                    <th>ساعت</th>
-                                    <th>ظرفیت</th>
-                                    <th>وضعیت</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                {schedules.map((schedule) => (
-
-                                    <tr key={schedule.id}>
-
-                                        <td>
-                                            <strong>
-                                                {schedule.game.name}
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            {formatDate(schedule.date)}
-                                        </td>
-
-                                        <td>
-                                            <span className="schedule-time">
-                                                {schedule.startTime}
-                                            </span>
-
-                                            <span className="schedule-to">
-                                                تا
-                                            </span>
-
-                                            <span className="schedule-time">
-                                                {schedule.endTime}
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            {schedule.capacity.toLocaleString(
-                                                "fa-IR"
-                                            )} نفر
-                                        </td>
-
-                                        <td>
-
-                                            <span
-                                                className={
-                                                    schedule.isActive
-                                                        ? "schedule-status active"
-                                                        : "schedule-status"
-                                                }
-                                            >
-                                                {schedule.isActive
-                                                    ? "فعال"
-                                                    : "غیرفعال"}
-                                            </span>
-
-                                        </td>
-
-                                        <td>
-
-                                            <div className="schedule-actions">
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        editSchedule(schedule)
-                                                    }
-                                                >
-                                                    ویرایش
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    className="danger"
-                                                    onClick={() =>
-                                                        deleteSchedule(schedule.id)
-                                                    }
-                                                >
-                                                    حذف
-                                                </button>
-
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                ))}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                )}
-
-            </section>
-
+    const activeConfigs = WEEKDAYS.map((d) => week[d.value]).filter((d) => d.ranges.length);
+    const fallback = activeConfigs[0] ?? defaults;
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/availability/${selected.type}/${selected.id}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: { durationMinutes: fallback.durationMinutes, gapMinutes: fallback.gapMinutes, minPlayers: fallback.minPlayers, maxPlayers: fallback.maxPlayers, price: fallback.price },
+          rules,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "خطا در ذخیره");
+      setItems((current) => current.map((item) => item.type === selected.type && item.id === selected.id ? { ...item, settings: { ...item.settings, ...fallback }, rules } : item));
+      setSuccess("زمان‌بندی روزانه ذخیره شد و بلافاصله در رزروها اعمال می‌شود.");
+    } catch (err) { setError(err instanceof Error ? err.message : "خطا در ذخیره"); }
+    finally { setSaving(false); }
+  }
+
+  return <CrudPage eyebrow="PADRA SCHEDULING" title="زمان‌بندی بازی‌ها و ایونت‌ها" description="تمام تنظیمات هر روز مستقل است؛ سانس‌ها خودکار ساخته می‌شوند و ظرفیت بر اساس رزروهای واقعی محاسبه می‌شود.">
+    {loadError && <div className="crud-alert crud-alert--error" role="alert">{loadError}</div>}
+    <div className="av-layout">
+      <CrudCard title="انتخاب مورد">
+        <div className="av-tabs">
+          <button type="button" className={tab === "game" ? "active" : ""} onClick={() => changeTab("game")}>بازی‌ها</button>
+          <button type="button" className={tab === "event" ? "active" : ""} onClick={() => changeTab("event")}>ایونت‌ها</button>
         </div>
-    );
+        {loading ? <div className="crud-empty">در حال دریافت...</div> : visibleItems.length === 0 ? <div className="crud-empty">موردی وجود ندارد.</div> : <div className="av-list">{visibleItems.map((item) => <button type="button" key={`${item.type}-${item.id}`} className={`av-item ${selectedId === item.id ? "active" : ""} ${item.isActive ? "" : "inactive"}`} onClick={() => select(item)}><strong>{item.name}</strong><small>{fa(new Set(item.rules.map((r) => r.weekday)).size)} روز فعال</small></button>)}</div>}
+      </CrudCard>
+      {selected && week ? <CrudCard title={selected.name} description={!selected.isActive ? "این مورد غیرفعال است و در صفحه رزرو نمایش داده نمی‌شود." : undefined}>
+        <p className="av-hint">مدت، فاصله، حداقل و حداکثر نفرات، ظرفیت کل و قیمت را برای هر روز جداگانه وارد کن. اگر یک روز چند بازه دارد، تنظیمات همان روز برای همه بازه‌ها اعمال می‌شود.</p>
+        <div className="av-section-title">برنامه هفتگی</div>
+        {WEEKDAYS.map((day) => {
+          const config = week[day.value];
+          const enabled = config.ranges.length > 0;
+          const slots = generateSlots(config.ranges, config.durationMinutes, config.gapMinutes);
+          return <div key={day.value} className={`av-day ${enabled ? "" : "off"}`}>
+            <div className="av-day-head"><label className="av-day-name"><input type="checkbox" checked={enabled} onChange={(e) => toggleDay(day.value, e.target.checked)} />{day.label}</label><span className="av-day-count">{enabled ? `${fa(slots.length)} سانس` : "تعطیل / بدون رزرو"}</span></div>
+            {enabled && <>
+              <div className="av-ranges">{config.ranges.map((range, index) => <div className="av-range" key={index}>
+                <label>از ساعت</label><input type="time" value={range.startTime} onChange={(e) => updateRange(day.value, index, "startTime", e.target.value)} />
+                <label>تا ساعت</label><input type="time" value={range.endTime} onChange={(e) => updateRange(day.value, index, "endTime", e.target.value)} />
+                <button type="button" className="av-small-btn danger" onClick={() => setRanges(day.value, config.ranges.filter((_, i) => i !== index))}>حذف</button>
+              </div>)}</div>
+              <div className="av-range-actions"><button type="button" className="av-small-btn" onClick={() => setRanges(day.value, [...config.ranges, { startTime: "16:00", endTime: "20:00" }])}>+ بازه دیگر</button><button type="button" className="av-small-btn" onClick={() => copyToAll(day.value)}>کپی تنظیمات این روز به همه روزها</button></div>
+              <div className="av-settings">
+                <CrudField label="مدت هر سانس (دقیقه)"><input type="number" min={5} max={600} value={config.durationMinutes} onChange={(e) => updateDay(day.value, "durationMinutes", e.target.value)} /></CrudField>
+                <CrudField label="فاصله سانس‌ها (دقیقه)"><input type="number" min={0} max={240} value={config.gapMinutes} onChange={(e) => updateDay(day.value, "gapMinutes", e.target.value)} /></CrudField>
+                <CrudField label="حداقل نفرات هر رزرو"><input type="number" min={1} value={config.minPlayers} onChange={(e) => updateDay(day.value, "minPlayers", e.target.value)} /></CrudField>
+                <CrudField label="حداکثر نفرات هر رزرو"><input type="number" min={1} value={config.maxPlayers} onChange={(e) => updateDay(day.value, "maxPlayers", e.target.value)} /></CrudField>
+                <CrudField label="ظرفیت کل هر سانس"><input type="number" min={1} value={config.capacity} onChange={(e) => updateDay(day.value, "capacity", e.target.value)} /></CrudField>
+                <CrudField label="قیمت هر نفر (تومان)"><input type="number" min={0} value={config.price} onChange={(e) => updateDay(day.value, "price", e.target.value)} /></CrudField>
+              </div>
+              {slots.length > 0 && <div className="av-chips" aria-label="پیش‌نمایش سانس‌ها">{slots.map((slot) => <span className="av-chip" key={slot.startTime}>{slot.startTime}–{slot.endTime}</span>)}</div>}
+            </>}
+          </div>;
+        })}
+        {error && <div className="crud-alert crud-alert--error" role="alert">{error}</div>}{success && <div className="crud-alert crud-alert--success" role="status">{success}</div>}
+        <div className="crud-form-actions"><button type="button" className="crud-button crud-button--primary" onClick={save} disabled={saving}>{saving ? "در حال ذخیره..." : "ذخیره زمان‌بندی"}</button></div>
+      </CrudCard> : <CrudCard title="زمان‌بندی"><div className="crud-empty">یک بازی یا ایونت را از فهرست انتخاب کنید.</div></CrudCard>}
+    </div>
+  </CrudPage>;
 }

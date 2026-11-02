@@ -150,7 +150,7 @@ export default function MenuPage() {
 
                     <div className="item-image">
                       {item.image ? (
-                        <img src={item.image} alt={item.name} />
+                        <img loading="lazy" decoding="async" src={item.image} alt={item.name} />
                       ) : (
                         <div className="image-placeholder">
                           <span>☕</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./calendar.css";
@@ -201,6 +202,7 @@ function getInitialDate() {
 }
 
 export default function EventsCalendarPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
   const router = useRouter();
 
   const [selectedDate, setSelectedDate] =
@@ -481,7 +483,7 @@ export default function EventsCalendarPage() {
   }
 
   async function handleDelete(item: Occurrence) {
-    const confirmed = window.confirm(
+    const confirmed = await confirmDialog(
       `آیا از حذف «${item.event.title}» در ساعت ${item.startTime} مطمئن هستید؟`
     );
 
@@ -713,7 +715,7 @@ export default function EventsCalendarPage() {
                     <div className="occurrence-title-wrap">
 
                       {item.event.image ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={item.event.image}
                           alt={item.event.title}
                           className="occurrence-image"

@@ -1,0 +1,182 @@
+.pf-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e0e9f2;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(18, 62, 115, 0.06);
+}
+
+.pf-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #123e73, #1768b0);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.pf-hero-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pf-hero-info h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-hero-info span {
+  color: #5d7084;
+  font-size: 13px;
+  text-align: right;
+}
+
+.pf-hero-info small {
+  color: #8a99aa;
+  font-size: 12px;
+}
+
+.pf-hero-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.pf-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid #e0e9f2;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.pf-stats strong {
+  color: #123e73;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.pf-stats span {
+  color: #7b8da3;
+  font-size: 12px;
+}
+
+.pf-tabs {
+  max-width: 360px;
+}
+
+.pf-filters {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin: 0 0 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pf-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.pf-filters button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #dce7f1;
+  border-radius: 999px;
+  background: #fff;
+  color: #34485c;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pf-filters button span {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #5d7084;
+  font-size: 11px;
+  text-align: center;
+}
+
+.pf-filters button.active {
+  border-color: #123e73;
+  background: #123e73;
+  color: #fff;
+}
+
+.pf-filters button.active span {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.acc-booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acc-alert--ok {
+  border: 1px solid #c9e8d6;
+  background: #eef9f2;
+  color: #1f7a45;
+}
+
+.acc-field input:disabled {
+  background: #f2f5f8;
+  color: #6b7c8f;
+}
+
+@media (max-width: 720px) {
+  .pf-hero {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .pf-hero-actions {
+    width: 100%;
+  }
+
+  .pf-hero-actions .acc-button {
+    flex: 1;
+  }
+
+  .pf-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pf-tabs {
+    max-width: none;
+  }
+}

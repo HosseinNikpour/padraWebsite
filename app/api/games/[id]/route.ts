@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { parseMinutes } from "@/lib/availability";
+import { authorize } from "@/lib/auth";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -10,6 +12,9 @@ export async function PUT(
   { params }: RouteContext
 ) {
   try {
+    const auth = await authorize("games.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const gameId = Number(id);
 
@@ -81,6 +86,8 @@ export async function PUT(
         description: description || null,
         image,
         duration,
+        // اگر مدت بازی عدد داشته باشد (مثلاً «۲۰ دقیقه»)، مدت واقعی نوبت‌ها هم همان می‌شود
+        ...(parseMinutes(duration) ? { durationMinutes: parseMinutes(duration) as number } : {}),
         capacity,
         price,
         sortOrder,
@@ -104,6 +111,9 @@ export async function DELETE(
   { params }: RouteContext
 ) {
   try {
+    const auth = await authorize("games.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const gameId = Number(id);
 
@@ -125,6 +135,21 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("GAMES DELETE ERROR:", error);
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "این بازی رزرو ثبت‌شده دارد و حذف نمی‌شود. به‌جای حذف، آن را غیرفعال کنید.",
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json(
       { error: "خطا در حذف بازی" },

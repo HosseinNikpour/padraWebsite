@@ -1,0 +1,272 @@
+/* =========================================================
+   GAMES
+========================================================= */
+
+.games-section {
+  position: relative;
+  padding: 110px 6vw 150px;
+  background: #f5f6f7;
+}
+
+.section-heading {
+  max-width: 1400px;
+  margin: 0 auto 65px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.section-heading h2 {
+  margin: 20px 0 0;
+  color: var(--dark);
+  font-size: clamp(45px, 5vw, 74px);
+  line-height: 0.98;
+  font-weight: 500;
+  letter-spacing: -0.06em;
+}
+
+.section-heading h2 strong {
+  font-weight: 900;
+}
+
+.section-index {
+  color: #a0a4a9;
+  font-size: 68px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  direction: ltr;
+}
+
+.games-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.game-card {
+ min-width: 0;
+  background: #ffffff;
+  border: 1px solid #d9dde2;
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-6px);
+  border-color: #aeb4ba;
+  box-shadow: 0 18px 40px rgba(23, 33, 43, 0.10);
+}
+
+.game-card-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.game-card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #e7e8ea;
+}
+
+.game-card-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.game-card:hover .game-card-image {
+  transform: scale(1.05);
+}
+
+.game-card-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.35),
+    transparent 45%,
+    rgba(0, 0, 0, 0.15)
+  );
+  pointer-events: none;
+}
+
+.game-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e7e8ea;
+  color: #a5a9ae;
+}
+
+.game-card-placeholder span {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -3px;
+}
+
+.game-number {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.92);
+  color: #25282d;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.game-card-top {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  left: 18px;
+
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.game-card-top span:last-child {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.game-card-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 24px;
+}
+
+.game-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.game-title-row h3 {
+  margin: 0;
+  color: #25282d;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.game-arrow {
+  flex-shrink: 0;
+  color: #1769ff;
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.game-card:hover .game-arrow {
+  transform: translate(3px, -3px);
+}
+
+.game-card-content p {
+  margin: 14px 0 0;
+  color: #686d73;
+  font-size: 13px;
+  line-height: 2;
+}
+
+.game-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.game-meta span {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 62px;
+  padding: 10px 8px;
+
+  background: #f1f3f5;
+  border: 1px solid #e0e3e7;
+  border-radius: 8px;
+
+  color: #25282d;
+  font-size: 12px;
+  font-weight: 700;
+
+  text-align: center;
+
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.game-meta span::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 50%;
+  transform: translateX(50%);
+
+  width: 24px;
+  height: 2px;
+
+  background: #1769ff;
+  border-radius: 0 0 3px 3px;
+}
+
+.game-meta span:hover {
+  background: #ffffff;
+  border-color: #b8bec5;
+  transform: translateY(-2px);
+}
+
+.game-meta b {
+  margin-bottom: 5px;
+
+  color: #7b8188;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+.game-meta span b {
+ font-size: 13px;
+}
+/* =========================================================
+   TODAY
+========================================================= */

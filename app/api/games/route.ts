@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { parseMinutes } from "@/lib/availability";
+import { authorize, hasAccess } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const canSeeAll = await hasAccess("games.view");
+
     const games = await prisma.game.findMany({
+      where: canSeeAll ? undefined : { isActive: true },
       orderBy: [
         { sortOrder: "asc" },
         { createdAt: "desc" },
@@ -23,6 +28,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await authorize("games.manage");
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const name = String(body.name ?? "").trim();
@@ -81,6 +89,8 @@ export async function POST(request: Request) {
         description: description || null,
         image,
         duration,
+        // اگر مدت بازی عدد داشته باشد (مثلاً «۲۰ دقیقه»)، مدت واقعی نوبت‌ها هم همان می‌شود
+        ...(parseMinutes(duration) ? { durationMinutes: parseMinutes(duration) as number } : {}),
         capacity,
         price,
         sortOrder,

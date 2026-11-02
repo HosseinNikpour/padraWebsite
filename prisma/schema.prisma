@@ -50,9 +50,14 @@ model Event {
   description String?
   image       String?
 
-  capacity Int?
+  capacity Int? // حداکثر نفرات در هر نوبت (برای رزرو)
   genre    String?
   duration Int? // مدت زمان به دقیقه
+
+  // تنظیمات رزرو نوبتی
+  gapMinutes Int @default(10) // فاصله بین دو نوبت (دقیقه)
+  minPlayers Int @default(1) // حداقل نفرات در هر رزرو
+  price      Int @default(0) // قیمت هر نفر (تومان)
 
   isActive Boolean @default(true)
 
@@ -60,6 +65,8 @@ model Event {
   updatedAt DateTime @updatedAt
 
   occurrences EventOccurrence[]
+  rules       AvailabilityRule[]
+  bookings    Booking[]
 
   @@index([isActive])
 }
@@ -96,9 +103,15 @@ model Game {
   description String?
   image       String?
 
-  duration String // مدت بازی به دقیقه
-  capacity String // ظرفیت نفرات
-  price    Int // قیمت به تومان
+  duration String // متن نمایشی مدت بازی (مثلاً «۲۰ دقیقه»)
+  capacity String // متن نمایشی ظرفیت نفرات
+  price    Int // قیمت هر نفر به تومان
+
+  // تنظیمات رزرو نوبتی (نوبت‌ها از روی همین مقادیر و قوانین هفتگی ساخته می‌شوند)
+  durationMinutes Int @default(20) // مدت هر نوبت
+  gapMinutes      Int @default(10) // فاصله بین دو نوبت
+  minPlayers      Int @default(4) // حداقل نفرات در هر رزرو
+  maxPlayers      Int @default(10) // حداکثر نفرات در هر نوبت
 
   sortOrder Int     @default(0)
   isActive  Boolean @default(true)
@@ -106,12 +119,47 @@ model Game {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schedules GameSchedule[]
+  schedules GameSchedule[] // قدیمی؛ دیگر استفاده نمی‌شود
+  rules     AvailabilityRule[]
   bookings  Booking[]
 
   @@index([isActive])
 }
 
+/// قانون هفتگی: در چه روز هفته‌ای، از چه ساعتی تا چه ساعتی نوبت داده می‌شود.
+/// دقیقاً یکی از gameId یا eventId باید مقدار داشته باشد.
+/// weekday مطابق getUTCDay جاوااسکریپت: 0=یکشنبه ... 5=جمعه، 6=شنبه
+model AvailabilityRule {
+  id Int @id @default(autoincrement())
+
+  gameId Int?
+  game   Game? @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  eventId Int?
+  event   Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  weekday   Int
+  startTime String // HH:mm
+  endTime   String // HH:mm
+
+  // مقادیر اختصاصی این روز؛ null یعنی استفاده از تنظیمات عمومی قدیمی
+  durationMinutes Int?
+  gapMinutes      Int?
+  minPlayers      Int?
+  maxPlayers      Int?
+  capacity        Int?
+  price           Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gameId])
+  @@index([eventId])
+}
+
+/// مدل قدیمی سانس‌های تاریخ‌دار؛ فقط برای حفظ داده‌ی قبلی نگه داشته شده است.
 model GameSchedule {
   id Int @id @default(autoincrement())
 
@@ -137,27 +185,126 @@ model GameSchedule {
 model Booking {
   id Int @id @default(autoincrement())
 
-  gameId     Int
-  scheduleId Int
+  gameId  Int?
+  eventId Int?
+  game    Game?  @relation(fields: [gameId], references: [id])
+  event   Event? @relation(fields: [eventId], references: [id])
 
-  game     Game         @relation(fields: [gameId], references: [id])
-  schedule GameSchedule @relation(fields: [scheduleId], references: [id])
+  scheduleId Int? // قدیمی
+  schedule   GameSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  date      DateTime @db.Date // روز رزرو (بدون ساعت و منطقه‌ی زمانی)
+  startTime String // HH:mm
+  endTime   String // HH:mm
+
+  // حساب کاربری ثبت‌شده (پرسنل/مشتری)؛ رزرو مهمان می‌تواند null باشد.
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   customerName  String
   customerPhone String
 
   quantity Int
-  amount   Int
+  amount   Int // تومان
 
-  status     String  @default("PENDING")
-  paymentRef String?
+  // PENDING (در انتظار پرداخت) | CONFIRMED (پرداخت‌شده) | CANCELLED
+  status String @default("PENDING")
+
+  // پرداخت زرین‌پال
+  paymentAuthority String?   @unique // Authority دریافتی از زرین‌پال
+  paymentRef       String? // ref_id پس از تأیید موفق
+  paidAt           DateTime?
+  trackingCode     String?   @unique // کد رهگیری که پیامک می‌شود
+
+  expiresAt DateTime? // پایان نگه‌داشتن ظرفیت برای رزروهای PENDING
+
+  // زمان ارسال موفق پیامک کد رهگیری؛ null یعنی هنوز ارسال نشده (job تطبیق دوباره تلاش می‌کند)
+  smsSentAt DateTime?
+
+  // ثبت حضوری توسط پرسنل (بدون پرداخت آنلاین): ONLINE | STAFF
+  source        String  @default("ONLINE")
+  note          String? // توضیحات پرسنل برای رزرو حضوری
+  createdById   Int?
+  createdByName String?
+
+  payments Payment[]
+  history  BookingStatusHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([gameId])
+  @@index([gameId, date, startTime])
+  @@index([eventId, date, startTime])
   @@index([scheduleId])
   @@index([status])
+  @@index([status, expiresAt])
+  @@index([date])
+  @@index([userId])
+  @@index([customerPhone])
+}
+
+/// هر تلاش پرداخت یک ردیف: یک رزرو می‌تواند چند تلاش (و بعداً بازگشت وجه) داشته باشد.
+/// status: PENDING | PAID | FAILED | ABANDONED | REFUNDED
+model Payment {
+  id Int @id @default(autoincrement())
+
+  bookingId Int
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  authority String  @unique
+  amount    Int // تومان
+  status    String  @default("PENDING")
+  refId     String?
+  cardPan   String?
+  failCode  Int?
+  failNote  String?
+
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([bookingId])
+  @@index([status, createdAt])
+}
+
+/// تاریخچه‌ی تغییر وضعیت رزرو (چه کسی، چه زمانی، از چه منبعی)
+/// source: SYSTEM | CUSTOMER | ADMIN | PAYMENT | CRON
+model BookingStatusHistory {
+  id Int @id @default(autoincrement())
+
+  bookingId Int
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  fromStatus String?
+  toStatus   String
+  source     String
+  note       String?
+
+  actorId Int?
+  actor   User? @relation("StatusActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+  @@index([actorId])
+}
+
+/// کد یک‌بارمصرف پیامکی برای تأیید شماره‌ی موبایل (رزرو مهمان). خود کد ذخیره نمی‌شود، فقط hash.
+model OtpCode {
+  id Int @id @default(autoincrement())
+
+  phone    String
+  purpose  String @default("BOOKING")
+  codeHash String
+
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
 }
 
 model User {
@@ -172,11 +319,37 @@ model User {
 
   isActive Boolean @default(true)
 
+  // با تغییر رمز یا خروج از همه‌ی دستگاه‌ها افزایش می‌یابد و نشست‌های قبلی را باطل می‌کند
+  sessionVersion Int @default(0)
+
+  // اطلاعات مشترک حساب‌های پرسنل و مشتریان
+  phone        String? @unique
+  // پرسنل: شماره‌ی کاربر در دستگاه حضور و غیاب و سوپروایزر مستقیم
+  deviceCode   String? @unique
+  supervisorId Int?
+  supervisor   User?   @relation("Supervision", fields: [supervisorId], references: [id], onDelete: SetNull)
+  team         User[]  @relation("Supervision")
+
+  bookings         Booking[]
+  tasksCreated     Task[]             @relation("TaskCreator")
+  taskAssignments  TaskAssignment[]
+  taskUpdates      TaskUpdate[]
+  approvalHistory  ApprovalHistory[]  @relation("ApprovalActor")
+  leaveRequests    LeaveRequest[]     @relation("LeaveRequester")
+  leaveSupervised  LeaveRequest[]     @relation("LeaveSupervisor")
+  leaveFinalized   LeaveRequest[]     @relation("LeaveFinal")
+  shifts           Shift[]
+  swapRequests     ShiftSwapRequest[] @relation("SwapRequester")
+  swapReplacements ShiftSwapRequest[] @relation("SwapReplacement")
+  swapDecisions    ShiftSwapRequest[] @relation("SwapDecider")
+  statusChanges    BookingStatusHistory[] @relation("StatusActor")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([roleId])
   @@index([isActive])
+  @@index([supervisorId])
 }
 
 model Role {
@@ -225,4 +398,208 @@ model RolePermission {
 
   @@id([roleId, permissionId])
   @@index([permissionId])
+}
+
+
+/// درخواست مرخصی: ثبت توسط پرسنل ← تأیید سوپروایزر ← تأیید نهایی مدیر
+model LeaveRequest {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String // ANNUAL | SICK | UNPAID | OTHER
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date // شامل همان روز
+  days      Int
+  reason    String?
+
+  // PENDING_SUPERVISOR | PENDING_MANAGER | APPROVED | REJECTED | CANCELLED
+  status String @default("PENDING_SUPERVISOR")
+
+  supervisorById     Int?
+  supervisorBy       User?     @relation("LeaveSupervisor", fields: [supervisorById], references: [id], onDelete: SetNull)
+  supervisorDecision String? // APPROVED | REJECTED | SKIPPED
+  supervisorNote     String?
+  supervisorAt       DateTime?
+
+  finalById     Int?
+  finalBy       User?     @relation("LeaveFinal", fields: [finalById], references: [id], onDelete: SetNull)
+  finalDecision String? // APPROVED | REJECTED
+  finalNote     String?
+  finalAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries LeaveDay[]
+  history ApprovalHistory[]
+
+  @@index([userId, startDate])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+/// شیفت روزانه‌ی هر نفر: FULL (۱۰:۰۰–۲۳:۳۰) | AM (۱۰:۰۰–۱۶:۴۵) | PM (۱۶:۴۵–۲۳:۳۰) | LEAVE
+model Shift {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+  type String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+/// درخواست جابه‌جایی شیفت ← تأیید سوپروایزر
+model ShiftSwapRequest {
+  id Int @id @default(autoincrement())
+
+  requesterId Int
+  requester   User @relation("SwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  date          DateTime @db.Date
+  currentType   String // شیفت فعلی (در لحظه‌ی درخواست)
+  requestedType String // شیفت درخواستی
+
+  replacementId Int?
+  replacement   User? @relation("SwapReplacement", fields: [replacementId], references: [id], onDelete: SetNull)
+
+  reason String?
+
+  // PENDING_SUPERVISOR | APPROVED | REJECTED | CANCELLED
+  status String @default("PENDING_SUPERVISOR")
+
+  decidedById  Int?
+  decidedBy    User?     @relation("SwapDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decisionNote String?
+  decidedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history ApprovalHistory[]
+
+  @@index([requesterId, date])
+  @@index([status])
+}
+
+/// دستگاه حضور و غیاب (برای ارسال خودکار یا ثبت منبع ورود فایل)
+model AttendanceDevice {
+  id Int @id @default(autoincrement())
+
+  name     String
+  keyHash  String  @unique // SHA-256 کلید API (خود کلید ذخیره نمی‌شود)
+  isActive Boolean @default(true)
+
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  logs AttendanceLog[]
+}
+
+/// تردد خام. تاریخ و ساعت همان زمان دیواری دستگاه است (بدون منطقه‌ی زمانی).
+/// ارتباط با پرسنل در زمان خواندن از روی User.deviceCode انجام می‌شود.
+model AttendanceLog {
+  id Int @id @default(autoincrement())
+
+  deviceId Int?
+  device   AttendanceDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  deviceUserCode String
+  punchDate      DateTime @db.Date
+  punchTime      String // HH:mm:ss
+  direction      String? // IN | OUT | null (نامشخص)
+  source         String  @default("IMPORT") // DEVICE | IMPORT
+
+  createdAt DateTime @default(now())
+
+  @@unique([deviceUserCode, punchDate, punchTime])
+  @@index([punchDate])
+}
+
+
+/// هر تاریخ از یک درخواست مرخصی؛ برای مرخصی ساعتی ساعت شروع و پایان هم ثبت می‌شود.
+model LeaveDay {
+  id             Int          @id @default(autoincrement())
+  leaveRequestId Int
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  date           DateTime     @db.Date
+  type           String? // نوع این روز؛ برای درخواست‌های قدیمی null و از LeaveRequest.type استفاده می‌شود
+  startTime      String?
+  endTime        String?
+  createdAt      DateTime     @default(now())
+  @@index([leaveRequestId, date])
+  @@index([date])
+}
+
+/// تاریخچه‌ی مستقل و قابل پیگیری برای تصمیم‌های مرخصی و جابه‌جایی شیفت.
+model ApprovalHistory {
+  id                Int      @id @default(autoincrement())
+  requestType       String   // LEAVE | SHIFT_SWAP
+  leaveRequestId    Int?
+  leaveRequest      LeaveRequest? @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  shiftSwapRequestId Int?
+  shiftSwapRequest  ShiftSwapRequest? @relation(fields: [shiftSwapRequestId], references: [id], onDelete: Cascade)
+  actorId           Int
+  actor             User     @relation("ApprovalActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action            String   // APPROVED | REJECTED | CANCELLED | SUBMITTED
+  note              String?
+  createdAt         DateTime @default(now())
+  @@index([leaveRequestId, createdAt])
+  @@index([shiftSwapRequestId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// تسک ساخته‌شده توسط مدیر مجموعه یا سوپروایزر؛ تخصیص عمومی یا اختصاصی از طریق Assignment.
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  dueDate     DateTime? @db.Date
+  createdById Int
+  createdBy   User     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assignments TaskAssignment[]
+  @@index([createdById, createdAt])
+  @@index([dueDate])
+}
+
+model TaskAssignment {
+  id          Int      @id @default(autoincrement())
+  taskId      Int
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String   @default("OPEN") // OPEN | IN_PROGRESS | DONE
+  completedAt DateTime?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updates     TaskUpdate[]
+  @@unique([taskId, userId])
+  @@index([userId, status])
+}
+
+/// گزارش‌های روزانه‌ی انجام‌دهنده‌ی تسک (سابقه‌ی توضیحات و وضعیت با تاریخ)
+model TaskUpdate {
+  id           Int            @id @default(autoincrement())
+  assignmentId Int
+  assignment   TaskAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String // وضعیت تسک در لحظه‌ی ثبت گزارش: OPEN | IN_PROGRESS | DONE
+  note         String?
+  createdAt    DateTime       @default(now())
+
+  @@index([assignmentId, createdAt])
+  @@index([userId])
 }

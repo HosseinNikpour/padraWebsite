@@ -1,0 +1,187 @@
+/* هدر سایت (components/Header.tsx) */
+
+/* =========================
+   HEADER
+========================= */
+.site-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  height: 78px;
+  background: #1769ff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(18, 62, 115, 0.12);
+  backdrop-filter: blur(12px);
+  
+}
+
+.header-inner {
+  width: min(1500px, calc(100% - 48px));
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  color:rgb(255, 255, 255);
+}
+
+.logo {
+  margin-left: auto;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.logo span {
+  display: block;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin: 0 auto;
+}
+
+.desktop-nav a {
+  position: relative;
+  color: #c7d4e1;
+  font-size: 18px;
+  transition: color 0.25s ease;
+}
+
+.desktop-nav a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -9px;
+  width: 0;
+  height: 2px;
+  background: var(--primary-light);
+  box-shadow: 0 0 8px rgba(91, 167, 232, 0.5);
+  transition: width 0.25s ease;
+}
+
+.desktop-nav a:hover {
+  color: #dee948;
+}
+
+.desktop-nav a:hover::after {
+  width: 100%;
+}
+
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 35px;
+  padding-right: 28px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: #b9c7d6;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.header-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s ease;
+}
+
+.header-icon::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  width: 3px;
+  height: 3px;
+  background: #52677b;
+  border-radius: 50%;
+  transition: 0.25s;
+}
+
+.header-icon:hover {
+  color: var(--primary-light);
+  border-color: rgba(91, 167, 232, 0.35);
+  background: rgba(91, 167, 232, 0.08);
+  box-shadow: 0 0 18px rgba(91, 167, 232, 0.12);
+  transform: translateY(-2px);
+}
+
+.header-icon:hover svg {
+  transform: scale(1.08);
+}
+
+.header-icon:hover::after {
+  background: var(--primary-light);
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 1100px) {
+  .desktop-nav {
+      gap: 18px;
+    }
+
+  .header-icons {
+      margin-right: 15px;
+      padding-right: 15px;
+    }
+}
+
+@media (max-width: 900px) {
+  .site-header {
+      height: 70px;
+    }
+
+  .desktop-nav,
+  .header-icons {
+      display: none;
+    }
+
+  .mobile-menu-button {
+      width: 42px;
+      height: 42px;
+      margin-right: 0;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+  .mobile-menu-button span {
+      width: 22px;
+      height: 1px;
+      background: #d5e0ea;
+    }
+}

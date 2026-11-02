@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { authorize } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "دسترسی غیرمجاز" },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize("roles.view");
+    if (!auth.ok) return auth.response;
 
     const [roles, permissions] = await Promise.all([
       prisma.role.findMany({
@@ -54,14 +48,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "دسترسی غیرمجاز" },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize("roles.manage");
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
 

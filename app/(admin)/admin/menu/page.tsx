@@ -1,68 +1,43 @@
+import Link from "next/link";
+
+import { CrudPage } from "@/components/admin/crud/CrudPage";
+
+import "./menu-hub.css";
+
+const sections = [
+  {
+    href: "/admin/menu/categories",
+    icon: "☰",
+    title: "دسته‌بندی‌ها",
+    description: "افزودن، ویرایش و مدیریت دسته‌بندی‌های منو",
+    action: "مدیریت دسته‌بندی‌ها ←",
+  },
+  {
+    href: "/admin/menu/items",
+    icon: "🍔",
+    title: "آیتم‌های منو",
+    description: "افزودن، ویرایش و مدیریت غذاها و نوشیدنی‌ها",
+    action: "مدیریت آیتم‌ها ←",
+  },
+];
+
 export default function MenuAdminPage() {
   return (
-    <main className="min-h-screen bg-slate-50 p-6" dir="rtl">
-      <div className="mx-auto max-w-7xl">
-
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#123E73]">
-              مدیریت منو
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-              مدیریت دسته‌بندی‌ها و آیتم‌های منوی کافه
-            </p>
-          </div>
-        </div>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-          <a
-            href="/admin/menu/categories"
-            className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-          >
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#123E73]/10 text-2xl">
-              ☰
-            </div>
-
-            <h2 className="text-lg font-bold text-slate-800">
-              دسته‌بندی‌ها
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              افزودن، ویرایش و مدیریت دسته‌بندی‌های منو
-            </p>
-
-            <div className="mt-5 text-sm font-medium text-[#123E73]">
-              مدیریت دسته‌بندی‌ها ←
-            </div>
-          </a>
-
-          <a
-            href="/admin/menu/items"
-            className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-          >
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#123E73]/10 text-2xl">
-              🍔
-            </div>
-
-            <h2 className="text-lg font-bold text-slate-800">
-              آیتم‌های منو
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              افزودن، ویرایش و مدیریت غذاها و نوشیدنی‌ها
-            </p>
-
-            <div className="mt-5 text-sm font-medium text-[#123E73]">
-              مدیریت آیتم‌ها ←
-            </div>
-          </a>
-
-        </div>
+    <CrudPage
+      eyebrow="PADRA MENU"
+      title="مدیریت منو"
+      description="مدیریت دسته‌بندی‌ها و آیتم‌های منوی کافه"
+    >
+      <div className="menu-hub">
+        {sections.map((section) => (
+          <Link key={section.href} href={section.href} className="menu-hub__card">
+            <span className="menu-hub__icon">{section.icon}</span>
+            <h2>{section.title}</h2>
+            <p>{section.description}</p>
+            <span className="menu-hub__action">{section.action}</span>
+          </Link>
+        ))}
       </div>
-    </main>
+    </CrudPage>
   );
 }

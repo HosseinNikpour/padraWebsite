@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { useEffect, useState } from "react";
 
 import "./roles.css";
@@ -22,59 +23,27 @@ type Role = {
   }[];
 };
 
-const permissionGroups = [
-  {
-    title: "بازی‌ها",
-    permissions: [
-      "games.view",
-      "games.manage",
-    ],
-  },
-  {
-    title: "زمان‌بندی",
-    permissions: [
-      "schedules.view",
-      "schedules.manage",
-    ],
-  },
-  {
-    title: "رزروها",
-    permissions: [
-      "bookings.view",
-      "bookings.manage",
-    ],
-  },
-  {
-    title: "رویدادها",
-    permissions: [
-      "events.view",
-      "events.manage",
-    ],
-  },
-  {
-    title: "منوی کافه",
-    permissions: [
-      "menu.view",
-      "menu.manage",
-    ],
-  },
-  {
-    title: "کاربران",
-    permissions: [
-      "users.view",
-      "users.manage",
-    ],
-  },
-  {
-    title: "نقش‌ها و دسترسی‌ها",
-    permissions: [
-      "roles.view",
-      "roles.manage",
-    ],
-  },
+const permissionGroupOrder = [
+  { key: "games", title: "بازی‌ها" },
+  { key: "schedules", title: "زمان‌بندی" },
+  { key: "bookings", title: "رزروها" },
+  { key: "events", title: "رویدادها" },
+  { key: "menu", title: "منوی کافه" },
+  { key: "users", title: "کاربران و پرسنل" },
+  { key: "leave", title: "مرخصی و تأییدها" },
+  { key: "shifts", title: "شیفت‌ها و جابه‌جایی شیفت" },
+  { key: "attendance", title: "حضور و غیاب" },
+  { key: "roles", title: "نقش‌ها و دسترسی‌ها" },
 ];
 
+function getPermissionGroupKey(code: string) {
+  const separatorIndex = code.indexOf(".");
+  return separatorIndex === -1 ? code : code.slice(0, separatorIndex);
+}
+
+
 export default function RolesPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<
     Permission[]
@@ -88,6 +57,7 @@ export default function RolesPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -171,14 +141,36 @@ export default function RolesPage() {
     setSuccess("");
   }
 
-  function getPermission(
-    code: string
-  ) {
-    return permissions.find(
-      (permission) =>
-        permission.code === code
-    );
-  }
+  const groupedPermissions = (() => {
+    const groups = new Map<string, Permission[]>();
+
+    for (const permission of permissions) {
+      const key = getPermissionGroupKey(permission.code);
+      const current = groups.get(key) ?? [];
+      current.push(permission);
+      groups.set(key, current);
+    }
+
+    const knownGroups = permissionGroupOrder
+      .filter((group) => (groups.get(group.key)?.length ?? 0) > 0)
+      .map((group) => ({
+        key: group.key,
+        title: group.title,
+        permissions: (groups.get(group.key) ?? []).sort((a, b) => a.id - b.id),
+      }));
+
+    const knownKeys = new Set(permissionGroupOrder.map((group) => group.key));
+    const otherGroups = Array.from(groups.entries())
+      .filter(([key]) => !knownKeys.has(key))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, items]) => ({
+        key,
+        title: `سایر دسترسی‌ها (${key})`,
+        permissions: items.sort((a, b) => a.id - b.id),
+      }));
+
+    return [...knownGroups, ...otherGroups];
+  })();
 
   function hasPermission(
     permissionId: number
@@ -197,6 +189,25 @@ export default function RolesPage() {
   function disableAll() {
     setSelectedPermissions(new Set());
     setSuccess("");
+  }
+
+  async function syncStaffPermissions() {
+    const confirmed = await confirmDialog("دسترسی‌های پایه مرخصی، شیفت و حضور و غیاب اضافه و با نقش‌های پیش‌فرض همگام‌سازی شوند؟ دسترسی‌های فعلی حذف نمی‌شوند.");
+    if (!confirmed) return;
+    try {
+      setSyncing(true);
+      setError("");
+      setSuccess("");
+      const response = await fetch("/api/roles/sync-permissions", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "همگام‌سازی دسترسی‌ها ناموفق بود");
+      setSuccess("دسترسی‌های پرسنلی اضافه و با نقش‌های پیش‌فرض همگام شدند.");
+      await loadData();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "خطا در همگام‌سازی دسترسی‌ها");
+    } finally {
+      setSyncing(false);
+    }
   }
 
   async function savePermissions() {
@@ -274,9 +285,14 @@ export default function RolesPage() {
           </p>
         </div>
 
-        <div className="roles-count">
-          <span>{roles.length}</span>
-          نقش فعال
+        <div className="roles-header-actions">
+          <button type="button" className="roles-sync-button" onClick={syncStaffPermissions} disabled={syncing}>
+            {syncing ? "در حال همگام‌سازی..." : "افزودن دسترسی‌های پرسنلی"}
+          </button>
+          <div className="roles-count">
+            <span>{roles.length}</span>
+            نقش فعال
+          </div>
         </div>
       </div>
 
@@ -378,10 +394,14 @@ export default function RolesPage() {
                 </div>
 
                 <div className="permissions-actions">
+                  {selectedRole.code === "ADMIN" && (
+                    <span className="roles-admin-note">نقش مدیر سیستم دسترسی کامل دارد و قابل ویرایش نیست.</span>
+                  )}
                   <button
                     type="button"
                     onClick={enableAll}
                     className="permission-action"
+                    disabled={selectedRole.code === "ADMIN"}
                   >
                     فعال کردن همه
                   </button>
@@ -390,6 +410,7 @@ export default function RolesPage() {
                     type="button"
                     onClick={disableAll}
                     className="permission-action"
+                    disabled={selectedRole.code === "ADMIN"}
                   >
                     حذف همه
                   </button>
@@ -399,92 +420,51 @@ export default function RolesPage() {
 
               <div className="permission-groups">
 
-                {permissionGroups.map(
-                  (group) => (
-                    <div
-                      key={group.title}
-                      className="permission-group"
-                    >
-                      <div className="permission-group-title">
-                        {group.title}
-                      </div>
-
-                      <div className="permission-list">
-
-                        {group.permissions.map(
-                          (code) => {
-                            const permission =
-                              getPermission(
-                                code
-                              );
-
-                            if (!permission) {
-                              return null;
-                            }
-
-                            const active =
-                              hasPermission(
-                                permission.id
-                              );
-
-                            return (
-                              <button
-                                key={
-                                  permission.id
-                                }
-                                type="button"
-                                className={`permission-item ${
-                                  active
-                                    ? "active"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  togglePermission(
-                                    permission.id
-                                  )
-                                }
-                              >
-
-                                <div
-                                  className={`permission-checkbox ${
-                                    active
-                                      ? "checked"
-                                      : ""
-                                  }`}
-                                >
-                                  {active
-                                    ? "✓"
-                                    : ""}
-                                </div>
-
-                                <div className="permission-info">
-                                  <strong>
-                                    {
-                                      permission.name
-                                    }
-                                  </strong>
-
-                                  <small>
-                                    {
-                                      permission.code
-                                    }
-                                  </small>
-                                </div>
-
-                                <div className="permission-description">
-                                  {
-                                    permission.description
-                                  }
-                                </div>
-
-                              </button>
-                            );
-                          }
-                        )}
-
-                      </div>
+                {groupedPermissions.map((group) => (
+                  <div key={group.key} className="permission-group">
+                    <div className="permission-group-title">
+                      {group.title}
+                      <span className="permission-group-count">{group.permissions.length}</span>
                     </div>
-                  )
+
+                    <div className="permission-list">
+                      {group.permissions.map((permission) => {
+                        const active = hasPermission(permission.id);
+
+                        return (
+                          <button
+                            key={permission.id}
+                            type="button"
+                            className={`permission-item ${active ? "active" : ""}`}
+                            onClick={() => togglePermission(permission.id)}
+                            aria-pressed={active}
+                            disabled={selectedRole.code === "ADMIN"}
+                          >
+                            <div className={`permission-checkbox ${active ? "checked" : ""}`}>
+                              {active ? "✓" : ""}
+                            </div>
+
+                            <div className="permission-info">
+                              <strong>{permission.name}</strong>
+                              <small>{permission.code}</small>
+                            </div>
+
+                            {permission.description && (
+                              <div className="permission-description">
+                                {permission.description}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {permissions.length === 0 && (
+                  <div className="roles-empty">
+                    هیچ دسترسی فعالی در دیتابیس تعریف نشده است.
+                  </div>
                 )}
 
               </div>
@@ -505,7 +485,7 @@ export default function RolesPage() {
                   type="button"
                   className="roles-save-button"
                   onClick={savePermissions}
-                  disabled={saving}
+                  disabled={saving || selectedRole.code === "ADMIN"}
                 >
                   {saving
                     ? "در حال ذخیره..."

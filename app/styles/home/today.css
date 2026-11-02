@@ -1,0 +1,918 @@
+/* صفحه اصلی — بخش ایونت‌ها و سانس‌های قابل رزرو (#today) */
+
+/* =========================
+   TODAY
+========================= */
+.today-section {
+  padding: 130px 0;
+  background: #eef2f6;
+  overflow: hidden;
+}
+
+.today-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 65px;
+}
+
+.today-header h2 {
+  margin: 20px 0 0;
+  color: var(--text);
+  font-size: clamp(42px, 5vw, 70px);
+  line-height: 1.2;
+  letter-spacing: -2px;
+  font-weight: 800;
+}
+
+.today-header h2 span {
+  color: var(--primary);
+}
+
+.today-date {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  color: var(--text-light);
+}
+
+.today-date > strong {
+  color: var(--primary);
+  font-size: 64px;
+  line-height: 0.8;
+  font-weight: 800;
+}
+
+.today-date div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.today-date span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.today-date small {
+  color: #89939d;
+  font-size: 11px;
+}
+
+.schedule-time {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-time strong {
+  color: var(--text);
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.schedule-time span {
+  margin-top: 5px;
+  color: #9aa4ae;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 600px) {
+  .today-section {
+      padding: 90px 0;
+    }
+
+  .today-header {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 35px;
+    }
+
+  .today-header h2 {
+      font-size: 42px;
+    }
+
+  .today-date > strong {
+      font-size: 50px;
+    }
+
+  .schedule-time strong {
+      font-size: 21px;
+    }
+}
+
+/* =========================================================
+   TODAY
+========================================================= */
+/* =========================================================
+   TODAY / EVENTS
+   Editorial Schedule
+========================================================= */
+.today-section {
+  position: relative;
+  overflow: hidden;
+  padding: 120px 0 130px;
+  background: #171b20;
+  color: #fff;
+  direction: rtl;
+}
+
+.today-background-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 70px 70px;
+}
+
+.today-section::before {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  top: -260px;
+  left: -180px;
+
+  background: rgba(91, 167, 232, 0.12);
+  filter: blur(120px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.today-section::after {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  bottom: -220px;
+  right: -160px;
+
+  background: rgba(91, 167, 232, 0.08);
+  filter: blur(110px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+.today-header {
+  position: relative;
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+  margin: 0 auto 70px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.today-header-title {
+  max-width: 650px;
+}
+
+.today-header h2 {
+  margin: 0;
+  color: #fff; /* قبلاً از globals.css رنگ تیره می‌گرفت و روی پس‌زمینه‌ی تیره دیده نمی‌شد */
+
+  font-size: clamp(38px, 5vw, 68px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.today-header-title p {
+  margin: 18px 0 0;
+
+  color: #9da5ad;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.today-date {
+  min-width: 210px;
+  padding-right: 22px;
+
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.today-date span {
+  color: #7f8992;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.today-date strong {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   EDITORIAL LIST
+========================================================= */
+.today-editorial {
+  position: relative;
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+  margin: 0 auto;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.today-editorial-row {
+  position: relative;
+
+  min-height: 190px;
+  padding: 28px 0;
+
+  display: grid;
+
+  /*
+    RTL:
+    index | info | image | schedule
+    index سمت راست قرار می‌گیرد.
+  */
+  grid-template-columns:
+    minmax(80px, 1fr)
+    minmax(250px, 1.15fr)
+    minmax(200px, 0.75fr)
+    440px;
+
+  gap: 30px;
+  align-items: center;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+  transition:
+    background 0.3s ease,
+    padding 0.3s ease;
+}
+
+.today-editorial-row::before {
+  content: "";
+
+  position: absolute;
+  right: -1px;
+  top: 25px;
+  bottom: 25px;
+
+  width: 2px;
+
+  background: #5ba7e8;
+
+  transform: scaleY(0);
+  transform-origin: center;
+
+  transition: transform 0.3s ease;
+}
+
+.today-editorial-row:hover {
+  padding-right: 18px;
+  padding-left: 18px;
+
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.today-editorial-row:hover::before {
+  transform: scaleY(1);
+}
+
+/* =========================================================
+   INDEX
+========================================================= */
+.today-editorial-index {
+  align-self: stretch;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding: 4px 0;
+}
+
+.today-editorial-index span {
+  color: #5ba7e8;
+
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.today-editorial-index small {
+  color: #69737d;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* =========================================================
+   EVENT INFO
+========================================================= */
+.today-editorial-info {
+  min-width: 0;
+}
+
+.today-editorial-info h3 {
+  margin: 0;
+
+  color: #fff;
+
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.2;
+  font-weight: 900;
+
+  letter-spacing: -0.03em;
+
+  transition: color 0.25s ease;
+}
+
+.today-editorial-row:hover
+.today-editorial-info h3 {
+  color: #5ba7e8;
+}
+
+.today-editorial-info p {
+  max-width: 520px;
+
+  margin: 13px 0 0;
+
+  color: #89929b;
+
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.today-editorial-duration {
+  margin-top: 20px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  color: #717b84;
+
+  font-size: 10px;
+}
+
+.today-editorial-duration strong {
+  color: #c4cad0;
+
+  font-size: 11px;
+}
+
+/* =========================================================
+   IMAGE
+========================================================= */
+.today-editorial-image {
+  position: relative;
+
+  width: 100%;
+  height: 130px;
+
+  overflow: hidden;
+
+  background: #22282e;
+}
+
+.today-editorial-image img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  filter: saturate(0.8);
+
+  transition:
+    transform 0.5s ease,
+    filter 0.5s ease;
+}
+
+.today-editorial-row:hover
+.today-editorial-image img {
+  transform: scale(1.06);
+  filter: saturate(1);
+}
+
+.today-editorial-image-overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(18, 62, 115, 0.2),
+      transparent 60%
+    );
+
+  pointer-events: none;
+}
+
+.today-editorial-image-placeholder {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #242b32,
+      #15191d
+    );
+}
+
+.today-editorial-image-placeholder span {
+  color: #5ba7e8;
+
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.today-editorial-image-placeholder strong {
+  margin-top: 5px;
+
+  color: #66717b;
+
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+/* =========================================================
+   SCHEDULE
+========================================================= */
+.today-editorial-schedule {
+  min-width: 0;
+}
+
+.schedule-heading {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #9ba5ae;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.schedule-heading small {
+  color: #5ba7e8;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.schedule-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(91, 167, 232, 0.65) rgba(255, 255, 255, 0.06);
+  padding: 0 3px 0 5px;
+}
+
+.schedule-times::-webkit-scrollbar {
+  width: 5px;
+}
+
+.schedule-times::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.schedule-times::-webkit-scrollbar-thumb {
+  background: rgba(91, 167, 232, 0.65);
+  border-radius: 8px;
+}
+
+.schedule-time {
+  min-height: 42px;
+  padding: 7px 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  border-right: 2px solid rgba(91, 167, 232, 0.55);
+
+  background: rgba(255, 255, 255, 0.035);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.schedule-time:hover {
+  background: rgba(91, 167, 232, 0.08);
+  border-color: #5ba7e8;
+}
+
+.schedule-time-main {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.schedule-time-main strong {
+  color: #fff;
+
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 800;
+
+  direction: ltr;
+}
+
+.schedule-time-main span {
+  color: #727d86;
+
+  font-size: 11px;
+
+  direction: ltr;
+}
+
+.schedule-time small {
+  color: #8c969e;
+
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   NO SCHEDULE
+========================================================= */
+.schedule-empty {
+  min-height: 100px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  color: #667079;
+}
+
+.schedule-empty > span {
+  color: #5ba7e8;
+
+  font-size: 25px;
+  font-weight: 300;
+}
+
+.schedule-empty p {
+  margin: 0;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+.today-loading {
+  position: relative;
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+  min-height: 180px;
+
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #78838c;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  font-size: 13px;
+}
+
+/* =========================================================
+   EMPTY
+========================================================= */
+.today-empty {
+  position: relative;
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+  min-height: 260px;
+
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.empty-icon {
+  width: 42px;
+  height: 42px;
+
+  margin-bottom: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(91, 167, 232, 0.5);
+
+  color: #5ba7e8;
+
+  font-size: 20px;
+}
+
+.today-empty h3 {
+  margin: 0;
+
+  color: #dce1e5;
+
+  font-size: 20px;
+}
+
+.today-empty p {
+  margin: 10px 0 0;
+
+  color: #707b84;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+@media (max-width: 1000px) {
+  .today-editorial-row {
+      grid-template-columns:
+        minmax(250px, 1fr)
+        minmax(220px, 1fr)
+        55px;
+  
+      gap: 22px;
+    }
+
+  .today-editorial-image {
+      display: none;
+    }
+
+  .today-editorial-schedule {
+      padding-right: 10px;
+    }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+@media (max-width: 700px) {
+  .today-section {
+      padding: 80px 0 90px;
+    }
+
+  .today-header {
+      width: min(100% - 30px, 600px);
+  
+      margin-bottom: 45px;
+  
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 30px;
+    }
+
+  .today-header h2 {
+      font-size: 42px;
+    }
+
+  .today-date {
+      min-width: 0;
+  
+      padding-right: 15px;
+    }
+
+  .today-editorial {
+      width: calc(100% - 30px);
+    }
+
+  .today-editorial-row {
+      min-height: auto;
+  
+      padding: 25px 0;
+  
+      display: grid;
+  
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+
+  .today-editorial-row:hover {
+      padding-right: 8px;
+      padding-left: 8px;
+    }
+
+  .today-editorial-index {
+      display: none;
+    }
+
+  .today-editorial-index span {
+      font-size: 21px;
+    }
+
+  .today-editorial-index small {
+      display: none;
+    }
+
+  .today-editorial-info h3 {
+      font-size: 27px;
+    }
+
+  .today-editorial-info p {
+      font-size: 12px;
+    }
+
+  .today-editorial-image {
+      display: block;
+      grid-column: 1;
+      grid-row: 2;
+      height: 150px;
+    }
+
+  .today-editorial-info {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+  .today-editorial-schedule {
+      grid-column: 1;
+      grid-row: 3;
+      padding: 0;
+    }
+
+  .schedule-times {
+      max-height: 250px;
+    }
+
+  .schedule-heading {
+      margin-bottom: 10px;
+    }
+
+  .schedule-time {
+      min-height: 44px;
+    }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+@media (max-width: 430px) {
+  .today-header h2 {
+      font-size: 36px;
+    }
+
+  .today-editorial-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+
+  .today-editorial-info h3 {
+      font-size: 24px;
+    }
+
+  .today-editorial-image {
+      height: 125px;
+    }
+
+  .schedule-time-main strong {
+      font-size: 16px;
+    }
+
+  .schedule-time small {
+      font-size: 9px;
+    }
+}
+
+@media (max-width: 800px) {
+  .today-header h2 {
+      font-size: 50px;
+    }
+
+  .today-section {
+      padding: 90px 20px;
+    }
+
+  .today-header {
+      display: block;
+    }
+
+  .today-date {
+      align-items: flex-start;
+      margin-top: 25px;
+    }
+}
+
+@media (max-width: 480px) {
+  .today-header h2 {
+      font-size: 43px;
+    }
+}
+
+/* لینک سانس‌های قابل رزرو در بخش ایونت‌ها */
+.schedule-time-link {
+  color: inherit;
+  text-decoration: none;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+.schedule-time-link:focus-visible {
+  outline: 2px solid #5ba7e8;
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   RESPONSIVE FIXES
+   در تبلت ستون سانس‌ها در ستون ۵۵ پیکسلی گیر می‌کرد
+========================================================= */
+@media (min-width: 701px) and (max-width: 1000px) {
+  .today-editorial-row {
+    grid-template-columns: 64px minmax(0, 1fr) minmax(260px, 1.2fr);
+    gap: 22px;
+  }
+
+  .today-editorial-schedule {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .today-editorial-duration span,
+  .schedule-heading span,
+  .schedule-heading small,
+  .schedule-time small,
+  .today-editorial-image-placeholder strong {
+    font-size: 11px;
+  }
+}
+
+/* لپ‌تاپ‌های کوچک: مجموع حداقل عرض ستون‌ها از عرض صفحه بیشتر بود */
+@media (min-width: 1001px) and (max-width: 1200px) {
+  .today-editorial-row {
+    grid-template-columns: 64px minmax(0, 1.1fr) minmax(150px, 0.7fr) minmax(320px, 380px);
+    gap: 22px;
+  }
+}
+
+/* موبایل‌های بسیار کوچک: ردیف سانس (تاریخ + ساعت + قیمت) از عرض بیرون می‌زد */
+@media (max-width: 420px) {
+  .schedule-time-link {
+    flex-direction: row;
+    flex-wrap: wrap;
+    row-gap: 6px;
+    column-gap: 12px;
+  }
+
+  .schedule-time-link > small:last-child {
+    flex-basis: 100%;
+  }
+}

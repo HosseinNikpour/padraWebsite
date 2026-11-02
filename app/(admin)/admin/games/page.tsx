@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import "./games.css";
 import "@/components/admin/crud/crud-theme.css";
@@ -17,6 +18,7 @@ type Game = {
 };
 
 export default function GamesAdminPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
   const [games, setGames] = useState<Game[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -53,7 +55,7 @@ export default function GamesAdminPage() {
       setGames(data);
     } catch (error) {
       console.error("LOAD GAMES ERROR:", error);
-      alert("خطا در دریافت بازی‌ها");
+      toast("خطا در دریافت بازی‌ها");
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export default function GamesAdminPage() {
     } catch (error) {
       console.error("GAME IMAGE UPLOAD ERROR:", error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در آپلود تصویر"
@@ -144,24 +146,24 @@ export default function GamesAdminPage() {
     event.preventDefault();
 
     if (!name.trim()) {
-      alert("نام بازی را وارد کنید");
+      toast("نام بازی را وارد کنید");
       return;
     }
 
     if (!duration.trim()) {
-      alert("مدت بازی را وارد کنید");
+      toast("مدت بازی را وارد کنید");
       return;
     }
 
     if (!capacity.trim()) {
-      alert("ظرفیت بازی را وارد کنید");
+      toast("ظرفیت بازی را وارد کنید");
       return;
     }
 
     const numericPrice = Number(price || 0);
 
     if (!Number.isFinite(numericPrice) || numericPrice < 0) {
-      alert("قیمت معتبر نیست");
+      toast("قیمت معتبر نیست");
       return;
     }
 
@@ -206,7 +208,7 @@ export default function GamesAdminPage() {
     } catch (error) {
       console.error("SAVE GAME ERROR:", error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در ذخیره بازی"
@@ -217,7 +219,7 @@ export default function GamesAdminPage() {
   }
 
   async function deleteGame(id: number) {
-    const confirmed = confirm(
+    const confirmed = await confirmDialog(
       "آیا از حذف این بازی مطمئن هستید؟"
     );
 
@@ -249,7 +251,7 @@ export default function GamesAdminPage() {
     } catch (error) {
       console.error("DELETE GAME ERROR:", error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در حذف بازی"
@@ -286,7 +288,7 @@ export default function GamesAdminPage() {
       await loadGames();
     } catch (error) {
       console.error("TOGGLE GAME ERROR:", error);
-      alert("خطا در تغییر وضعیت بازی");
+      toast("خطا در تغییر وضعیت بازی");
     }
   }
 
@@ -342,7 +344,7 @@ export default function GamesAdminPage() {
 
                 <div className="game-row-image">
                   {game.image ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={game.image}
                       alt={game.name}
                     />
@@ -571,7 +573,7 @@ export default function GamesAdminPage() {
 
                 {image && (
                   <div className="image-preview">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={image}
                       alt={name || "بازی"}
                     />

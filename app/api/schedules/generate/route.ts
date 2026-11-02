@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 function timeToMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
@@ -18,6 +19,9 @@ function minutesToTime(minutes: number) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await authorize("schedules.manage");
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const {

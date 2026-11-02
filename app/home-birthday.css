@@ -1,0 +1,707 @@
+/* =========================================================
+   BIRTHDAY SECTION
+   Birthday Story / Photo Journal
+========================================================= */
+
+.birthday-section {
+  position: relative;
+  overflow: hidden;
+
+  padding: 145px 0 120px;
+
+  background: #e8e3da;
+  color: #17212b;
+
+  direction: rtl;
+}
+
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.birthday-section::before {
+  content: "";
+
+  position: absolute;
+
+  width: 700px;
+  height: 700px;
+
+  top: -400px;
+  right: -250px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(23, 33, 43, 0.12);
+}
+
+.birthday-section::after {
+  content: "";
+
+  position: absolute;
+
+  width: 500px;
+  height: 500px;
+
+  bottom: -350px;
+  left: -250px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(23, 33, 43, 0.1);
+}
+
+.birthday-bg-number {
+  position: absolute;
+
+  left: -20px;
+  bottom: -130px;
+
+  color: rgba(23, 33, 43, 0.035);
+
+  font-size: 420px;
+  line-height: 1;
+
+  font-weight: 900;
+
+  direction: ltr;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.birthday-container {
+  position: relative;
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADING
+========================================================= */
+
+.birthday-heading {
+  width: 1000px;
+
+  margin-bottom: 70px;
+}
+
+.birthday-eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 20px;
+
+  color: #1768b0;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 0.22em;
+}
+
+.birthday-eyebrow::before {
+  content: "";
+
+  width: 28px;
+  height: 1px;
+
+  background: #1768b0;
+}
+
+.birthday-heading h2 {
+  margin: 0;
+
+  font-size: clamp(52px, 6vw, 82px);
+
+  line-height: 1.05;
+
+  font-weight: 900;
+
+  letter-spacing: -0.055em;
+}
+
+.birthday-heading h2 strong {
+  color: #1768b0;
+}
+
+.birthday-heading p {
+  max-width: 480px;
+
+  margin: 25px 0 0;
+
+  color: #69727a;
+
+  font-size: 14px;
+
+  line-height: 2;
+}
+
+
+/* =========================================================
+   PHOTO STORY
+========================================================= */
+
+.birthday-story {
+  position: relative;
+
+  height: 560px;
+
+  margin-bottom: 90px;
+}
+
+
+/* =========================================================
+   COMMON PHOTO
+========================================================= */
+
+.birthday-photo {
+  position: absolute;
+
+  overflow: hidden;
+
+  background: #cfc9c0;
+
+  box-shadow:
+    0 25px 60px rgba(23, 33, 43, 0.13);
+}
+
+.birthday-photo img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  transition:
+    transform 0.7s ease,
+    filter 0.5s ease;
+}
+
+.birthday-photo:hover img {
+  transform: scale(1.05);
+}
+
+
+/* =========================================================
+   SMALL PHOTO
+========================================================= */
+
+.birthday-photo-small {
+  z-index: 3;
+
+  width: 280px;
+  height: 360px;
+
+  right: 0;
+  top: 80px;
+
+  transform: rotate(3deg);
+}
+
+.birthday-photo-small::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(0,0,0,0.45),
+      transparent 45%
+    );
+}
+
+.birthday-photo-label {
+  position: absolute;
+
+  z-index: 2;
+
+  right: 18px;
+  bottom: 18px;
+
+  color: #fff;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.18em;
+}
+
+
+/* =========================================================
+   MAIN PHOTO
+========================================================= */
+
+.birthday-photo-main {
+  z-index: 2;
+
+  width: 670px;
+  height: 500px;
+
+  right: 190px;
+  top: 0;
+}
+
+.birthday-photo-main::before {
+  content: "";
+
+  position: absolute;
+
+  z-index: 1;
+
+  inset: 0;
+
+  border: 1px solid rgba(255,255,255,0.25);
+
+  pointer-events: none;
+}
+
+.birthday-photo-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(0,0,0,0.72),
+      transparent 55%
+    );
+}
+
+.birthday-photo-caption {
+  position: absolute;
+
+  z-index: 3;
+
+  right: 30px;
+  bottom: 28px;
+
+  color: #fff;
+}
+
+.birthday-photo-caption span {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #9ecdf2;
+
+  font-size: 9px;
+
+  letter-spacing: 0.15em;
+
+  direction: ltr;
+}
+
+.birthday-photo-caption strong {
+  display: block;
+
+  font-size: 29px;
+
+  line-height: 1.25;
+
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   THIRD PHOTO
+========================================================= */
+
+.birthday-photo-third {
+  z-index: 1;
+
+  width: 240px;
+  height: 300px;
+
+  left: 0;
+  bottom: 5px;
+
+  transform: rotate(-4deg);
+}
+
+
+/* =========================================================
+   EXPERIENCE
+========================================================= */
+
+.birthday-experience {
+  padding: 35px 0;
+
+  border-top: 1px solid rgba(23, 33, 43, 0.16);
+  border-bottom: 1px solid rgba(23, 33, 43, 0.16);
+
+  display: grid;
+
+  grid-template-columns: 1fr 2.7fr;
+
+  align-items: center;
+
+  gap: 50px;
+}
+
+.birthday-experience-title {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.birthday-experience-title span {
+  color: #1768b0;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.18em;
+}
+
+.birthday-experience-title strong {
+  color: #29343d;
+
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   EXPERIENCE ITEMS
+========================================================= */
+
+.birthday-experience-items {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+}
+
+.birthday-experience-item {
+  min-height: 75px;
+
+  padding: 0 22px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  border-right: 1px solid rgba(23, 33, 43, 0.14);
+}
+
+.birthday-experience-item:first-child {
+  border-right: 0;
+}
+
+.birthday-experience-item > span {
+  color: #1768b0;
+
+  font-size: 9px;
+
+  direction: ltr;
+}
+
+.birthday-experience-item strong {
+  margin-top: 6px;
+
+  color: #29343d;
+
+  font-size: 14px;
+}
+
+.birthday-experience-item small {
+  margin-top: 4px;
+
+  color: #858c91;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   BOTTOM CTA
+========================================================= */
+
+.birthday-bottom {
+  padding-top: 70px;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-between;
+
+  gap: 30px;
+}
+
+.birthday-bottom > div {
+  display: flex;
+
+  flex-direction: column;
+}
+
+.birthday-bottom > div > span {
+  margin-bottom: 10px;
+
+  color: #7b8389;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.18em;
+}
+
+.birthday-bottom h3 {
+  margin: 0;
+
+  color: #29343d;
+
+  font-size: 38px;
+
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: -0.04em;
+}
+
+.birthday-bottom h3 strong {
+  color: #1768b0;
+}
+
+
+.birthday-cta {
+  height: 55px;
+
+  padding: 0 25px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 18px;
+
+  background: #17212b;
+
+  color: #fff;
+
+  text-decoration: none;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.birthday-cta span {
+  font-size: 17px;
+}
+
+.birthday-cta:hover {
+  background: #1768b0;
+
+  transform: translateY(-3px);
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .birthday-heading {
+    width: 100%;
+  }
+
+  .birthday-story {
+    height: 500px;
+  }
+
+  .birthday-photo-main {
+    width: 60%;
+    right: 15%;
+  }
+
+  .birthday-photo-small {
+    width: 25%;
+    height: 300px;
+  }
+
+  .birthday-photo-third {
+    width: 22%;
+    height: 250px;
+  }
+
+  .birthday-experience {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .birthday-experience-items {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .birthday-section {
+    padding: 90px 0 80px;
+  }
+
+  .birthday-container {
+    width: calc(100% - 30px);
+  }
+
+  .birthday-heading {
+    margin-bottom: 45px;
+  }
+
+  .birthday-heading h2 {
+    font-size: 48px;
+  }
+
+  .birthday-heading p {
+    font-size: 13px;
+  }
+
+
+  /* عکس‌ها در موبایل */
+  .birthday-story {
+    height: 480px;
+
+    margin-bottom: 60px;
+  }
+
+  .birthday-photo-main {
+    width: 78%;
+    height: 370px;
+
+    right: 11%;
+    top: 20px;
+  }
+
+  .birthday-photo-small {
+    width: 38%;
+    height: 190px;
+
+    right: 0;
+    top: 270px;
+  }
+
+  .birthday-photo-third {
+    width: 35%;
+    height: 175px;
+
+    left: 0;
+    bottom: 5px;
+  }
+
+  .birthday-photo-caption {
+    right: 18px;
+    bottom: 18px;
+  }
+
+  .birthday-photo-caption strong {
+    font-size: 23px;
+  }
+
+
+  /* experience */
+  .birthday-experience-items {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .birthday-experience-item {
+    min-height: 80px;
+
+    padding: 10px 15px;
+
+    border-right: 0;
+    border-bottom: 1px solid rgba(23, 33, 43, 0.14);
+  }
+
+  .birthday-experience-item:nth-child(odd) {
+    border-left: 1px solid rgba(23, 33, 43, 0.14);
+  }
+
+
+  /* CTA */
+  .birthday-bottom {
+    padding-top: 50px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .birthday-bottom h3 {
+    font-size: 32px;
+  }
+
+  .birthday-cta {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+
+  .birthday-heading h2 {
+    font-size: 40px;
+  }
+
+  .birthday-story {
+    height: 420px;
+  }
+
+  .birthday-photo-main {
+    height: 325px;
+  }
+
+  .birthday-photo-small {
+    top: 250px;
+    height: 155px;
+  }
+
+  .birthday-photo-third {
+    height: 145px;
+  }
+
+  .birthday-photo-caption strong {
+    font-size: 19px;
+  }
+
+  .birthday-experience-title strong {
+    font-size: 14px;
+  }
+}
+
+
+
+

@@ -1018,3 +1018,226 @@
   font-size: 11px;
   line-height: 1.7;
 }
+/* ---------- رزرو نوبتی (داینامیک) ---------- */
+
+.booking-schedule {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.booking-schedule-state {
+  display: block;
+  margin-top: 6px;
+  color: #7b8da3;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.booking-schedule.is-full {
+  background: #f4f5f7;
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.booking-schedule.is-full .booking-schedule-time {
+  color: #8a949e;
+  text-decoration: line-through;
+}
+
+.booking-text-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #dfe5ea;
+  border-radius: 12px;
+  background: #fff;
+  color: #17212b;
+  font: inherit;
+  font-size: 14px;
+}
+
+.booking-text-input:focus {
+  outline: none;
+  border-color: #5ba7e8;
+  box-shadow: 0 0 0 3px rgba(91, 167, 232, 0.15);
+}
+
+.booking-done {
+  text-align: center;
+}
+
+.booking-done-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: #e8f6ee;
+  color: #23824b;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.booking-done h1 {
+  margin: 0 0 8px;
+  color: #123e73;
+  font-size: 24px;
+}
+
+.booking-hint {
+  margin-top: 14px;
+  color: #7b8da3;
+  font-size: 13px;
+}
+
+
+/* دکمه‌ی لینک (قبلاً از .primary-action صفحه‌ی اصلی استفاده می‌شد که اینجا لود نمی‌شد) */
+.booking-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: 14px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #123e73;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* ---------- مشتری: ورود یا مهمان ---------- */
+
+.booking-customer-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 18px 0 12px;
+  border: 1px solid #dbe7f3;
+  border-radius: 14px;
+  background: #f4f9fd;
+}
+
+.booking-customer-box > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booking-customer-box small,
+.booking-customer-box span {
+  color: #6b7c8f;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.booking-customer-box strong {
+  color: #123e73;
+  font-size: 14px;
+}
+
+.booking-customer-box button,
+.booking-customer-box a {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border: 1px solid #c9dbed;
+  border-radius: 10px;
+  background: #fff;
+  color: #123e73;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.booking-guest-title {
+  margin: 4px 0 12px;
+  color: #6b7c8f;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .booking-customer-box {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* تأیید موبایل مهمان با کد پیامکی */
+.booking-otp {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.booking-otp-row {
+  display: flex;
+  gap: 8px;
+}
+
+.booking-otp-row .booking-text-input {
+  flex: 1;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+
+.booking-otp-button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: #1d6fd1;
+  color: #fff;
+}
+
+.booking-otp-button--ghost {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  opacity: 0.85;
+}
+
+.booking-otp-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.booking-otp-ok {
+  margin: 0;
+  color: #1b8a4b;
+  font-weight: 700;
+}
+
+.booking-otp-msg {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ظرفیت ایونت */
+.booking-capacity-detail { font-weight: 500; font-size: 0.9em; }
+.booking-capacity-detail b { color: #1b8a4b; }
+.booking-capacity-detail b.is-low { color: #b42318; }
+.booking-capacity-bar { margin-top: 8px; height: 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.12); overflow: hidden; }
+.booking-capacity-bar span { display: block; height: 100%; background: #1d6fd1; transition: width 0.3s ease; }
+
+/* رزرو حضوری توسط پرسنل در صفحه‌ی عمومی */
+.booking-staff-panel { margin-top: 12px; display: grid; gap: 10px; }
+.booking-staff-panel textarea { min-height: 84px; resize: vertical; }
+.booking-staff-done {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e8f6ee;
+  color: #146c3a;
+  line-height: 1.9;
+}
+.booking-staff-done a { color: inherit; font-weight: 700; text-decoration: underline; }

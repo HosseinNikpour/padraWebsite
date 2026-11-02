@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { useEffect, useState } from "react";
 
 import "./event.css";
@@ -21,6 +22,7 @@ type EventItem = {
 };
 
 export default function EventsAdminPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
     const [events, setEvents] = useState<EventItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export default function EventsAdminPage() {
             setEvents(data);
         } catch (error) {
             console.error(error);
-            alert("خطا در دریافت ایونت‌ها");
+            toast("خطا در دریافت ایونت‌ها");
         } finally {
             setLoading(false);
         }
@@ -101,12 +103,12 @@ export default function EventsAdminPage() {
 
     async function uploadImage(file: File) {
         if (!file.type.startsWith("image/")) {
-            alert("فقط فایل تصویری مجاز است");
+            toast("فقط فایل تصویری مجاز است");
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            alert("حجم تصویر نباید بیشتر از ۵ مگابایت باشد");
+            toast("حجم تصویر نباید بیشتر از ۵ مگابایت باشد");
             return;
         }
 
@@ -131,7 +133,7 @@ export default function EventsAdminPage() {
         } catch (error) {
             console.error(error);
 
-            alert(
+            toast(
                 error instanceof Error
                     ? error.message
                     : "خطا در آپلود تصویر"
@@ -143,7 +145,7 @@ export default function EventsAdminPage() {
 
     async function saveEvent() {
         if (!title.trim()) {
-            alert("عنوان ایونت را وارد کنید");
+            toast("عنوان ایونت را وارد کنید");
             return;
         }
 
@@ -186,7 +188,7 @@ export default function EventsAdminPage() {
             await loadEvents();
             resetForm();
 
-            alert(
+            toast(
                 editingId
                     ? "ایونت با موفقیت ویرایش شد"
                     : "ایونت با موفقیت ایجاد شد"
@@ -194,7 +196,7 @@ export default function EventsAdminPage() {
         } catch (error) {
             console.error(error);
 
-            alert(
+            toast(
                 error instanceof Error
                     ? error.message
                     : "خطا در ذخیره ایونت"
@@ -205,7 +207,7 @@ export default function EventsAdminPage() {
     }
 
     async function deleteEvent(id: number) {
-        const confirmed = window.confirm(
+        const confirmed = await confirmDialog(
             "آیا از حذف این ایونت مطمئن هستید؟ تمام اجراهای این ایونت نیز حذف خواهند شد."
         );
 
@@ -234,7 +236,7 @@ export default function EventsAdminPage() {
         } catch (error) {
             console.error(error);
 
-            alert(
+            toast(
                 error instanceof Error
                     ? error.message
                     : "خطا در حذف ایونت"
@@ -280,7 +282,7 @@ export default function EventsAdminPage() {
             );
         } catch (error) {
             console.error(error);
-            alert("خطا در تغییر وضعیت ایونت");
+            toast("خطا در تغییر وضعیت ایونت");
         }
     }
 
@@ -350,7 +352,7 @@ export default function EventsAdminPage() {
                             >
                                 <div className="event-info">
                                     {event.image ? (
-                                        <img
+                                        <img loading="lazy" decoding="async"
                                             src={event.image}
                                             alt={event.title}
                                             className="event-image"
@@ -568,7 +570,7 @@ export default function EventsAdminPage() {
                         <div className="image-upload-box">
                             {image ? (
                                 <div className="image-preview">
-                                    <img
+                                    <img loading="lazy" decoding="async"
                                         src={image}
                                         alt={
                                             title ||

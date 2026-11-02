@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 type Params = {
   params: Promise<{
@@ -12,6 +13,9 @@ export async function PUT(
   { params }: Params
 ) {
   try {
+    const auth = await authorize("menu.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const itemId = Number(id);
 
@@ -87,6 +91,9 @@ export async function DELETE(
   { params }: Params
 ) {
   try {
+    const auth = await authorize("menu.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const itemId = Number(id);
 

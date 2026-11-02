@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { useEffect, useState } from "react";
 
 type Category = {
@@ -13,6 +14,7 @@ type Category = {
 };
 
 export default function CategoriesPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,7 +44,7 @@ export default function CategoriesPage() {
       setCategories(data);
     } catch (error) {
       console.error(error);
-      alert("خطا در دریافت دسته‌بندی‌ها");
+      toast("خطا در دریافت دسته‌بندی‌ها");
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function CategoriesPage() {
 
   async function saveCategory() {
     if (!name.trim()) {
-      alert("نام دسته‌بندی را وارد کنید");
+      toast("نام دسته‌بندی را وارد کنید");
       return;
     }
 
@@ -108,7 +110,7 @@ export default function CategoriesPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در ذخیره دسته‌بندی"
@@ -120,13 +122,13 @@ export default function CategoriesPage() {
 
   async function deleteCategory(category: Category) {
     if (category._count.items > 0) {
-      alert(
+      toast(
         "این دسته‌بندی دارای آیتم است و قابل حذف نیست."
       );
       return;
     }
 
-    const confirmed = confirm(
+    const confirmed = await confirmDialog(
       `آیا از حذف «${category.name}» مطمئن هستید؟`
     );
 
@@ -152,7 +154,7 @@ export default function CategoriesPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در حذف دسته‌بندی"

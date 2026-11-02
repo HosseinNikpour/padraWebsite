@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const auth = await authorize("events.view");
+    if (!auth.ok) return auth.response;
+
     const events = await prisma.event.findMany({
       orderBy: {
         createdAt: "desc",
@@ -39,6 +43,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await authorize("events.manage");
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const title = String(body.title ?? "").trim();

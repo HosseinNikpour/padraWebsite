@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const auth = await authorize("menu.view");
+    if (!auth.ok) return auth.response;
+
     const items = await prisma.menuItem.findMany({
       include: {
         category: true,
@@ -30,6 +34,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await authorize("menu.manage");
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const name = String(body.name ?? "").trim();

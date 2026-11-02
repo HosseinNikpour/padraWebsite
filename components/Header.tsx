@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import "./header.css";
 
 const menuItems = [
   { label: "خانه", href: "#home" },
@@ -67,6 +68,25 @@ export default function Header() {
 
   const closeMenu = () => setOpen(false);
 
+  // وضعیت ورود: پرسنل → پنل مدیریت، مشتری → پروفایل، مهمان → ورود
+  const [session, setSession] = useState<{ type: "staff" | "customer" | null }>({ type: null });
+
+  useEffect(() => {
+    fetch("/api/session", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => setSession({ type: data.type ?? null }))
+      .catch(() => setSession({ type: null }));
+  }, []);
+
+  const accountLink =
+    session.type === "staff"
+      ? { label: "پنل مدیریت", href: "/admin" }
+      : session.type === "customer"
+        ? { label: "حساب من", href: "/profile" }
+        : { label: "ورود / ثبت‌نام", href: "/account" };
+
+  const navItems = [...menuItems, accountLink];
+
   return (
     <header className="site-header">
       <div className="header-inner">
@@ -80,7 +100,7 @@ export default function Header() {
         </a>
 
         <nav className="desktop-nav">
-          {menuItems.map((item) => (
+          {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
@@ -122,9 +142,9 @@ export default function Header() {
             <MapPinIcon />
           </a>
  <a
-            href="/admin/login"
+            href={accountLink.href}
             className="header-icon"
-            aria-label="لاگین"
+            aria-label={accountLink.label}
           >
             <LoginIcon />
           </a>

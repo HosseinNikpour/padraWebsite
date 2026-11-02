@@ -3,19 +3,22 @@
 import Link from "next/link";
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
-import "./mainpage.css";
+import "./styles/home/base.css";
+import "./styles/home/hero.css";
+import "./styles/home/games.css";
+import "./styles/home/today.css";
+import "./styles/home/cafe.css";
+import "./styles/home/birthday.css";
+import "./styles/home/about.css";
 
 
-type EventOccurrence = {
-  id: number;
-  eventId: number;
-  eventDate: string;
+type EventSlot = {
+  date: string;
   startTime: string;
   endTime: string;
   price: number;
-  capacity: number | null;
-  isActive: boolean;
-  sortOrder: number;
+  capacity: number;
+  remaining: number;
 };
 
 type EventItem = {
@@ -23,16 +26,11 @@ type EventItem = {
   title: string;
   description: string | null;
   image: string | null;
-  capacity: number | null;
   genre: string | null;
   duration: number | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-
-  occurrences: EventOccurrence[];
+  isActive?: boolean;
+  slots: EventSlot[];
 };
-
 
 
 type GameItem = {
@@ -40,8 +38,8 @@ type GameItem = {
   name: string;
   description: string | null;
   image: string | null;
-  duration: number | null;
-  capacity: number | null;
+  duration: string | null;
+  capacity: string | null;
   price: number | null;
   sortOrder: number;
   isActive: boolean;
@@ -64,7 +62,7 @@ export default function HomePage() {
     try {
       setLoadingEvents(true);
 
-      const res = await fetch("/api/events/today", {
+      const res = await fetch("/api/events/available", {
         cache: "no-store",
       });
 
@@ -118,12 +116,6 @@ export default function HomePage() {
     if (!price) return "استعلام قیمت";
 
     return `${new Intl.NumberFormat("fa-IR").format(price)} تومان`;
-  }
-
-  function formatDuration(duration: number | null) {
-    if (!duration) return null;
-
-    return `${new Intl.NumberFormat("fa-IR").format(duration)} دقیقه`;
   }
 
   return (
@@ -247,7 +239,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="games-layout">
-            {games.slice(0, 5).map((game, index) => (
+            {games.map((game, index) => (
               <article
                 className="game-card"
                 key={game.id}
@@ -258,7 +250,7 @@ export default function HomePage() {
                 >
                   <div className="game-card-image-wrap">
                     {game.image ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={game.image}
                         alt={game.name}
                         className="game-card-image"
@@ -332,11 +324,11 @@ export default function HomePage() {
             <span className="eyebrow">LIVE AT PADRA</span>
 
             <h2>
-              امروز چه خبره؟
+              چه ایونتی رزرو کنیم؟
             </h2>
 
             <p>
-              برنامه‌ها و ایونت‌های امروز پادرا را ببین.
+              همه سانس‌های آزاد ایونت‌های پادرا را ببین و همان‌جا انتخاب کن.
             </p>
           </div>
 
@@ -345,10 +337,9 @@ export default function HomePage() {
 
             <strong>
               {new Intl.DateTimeFormat("fa-IR", {
-                weekday: "long",
                 day: "numeric",
                 month: "long",
-              }).format(new Date())}
+              }).format(new Date())} 
             </strong>
           </div>
         </div>
@@ -370,31 +361,24 @@ export default function HomePage() {
         ) : (
           <div className="today-editorial">
             {events.map((event, index) => {
-              const occurrences = event.occurrences ?? [];
+              const slots = event.slots ?? [];
 
               return (
                 <article
                   key={event.id}
                   className="today-editorial-row"
                 >
-                  {/* شماره و دسته‌بندی */}
+               {/* شماره و دسته‌بندی */}
                   <div className="today-editorial-index">
-                    <span>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
-                    <small>
-                      {event.genre || "EVENT"}
-                    </small>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <small>{event.genre || "EVENT"}</small>
                   </div>
 
                   {/* اطلاعات ایونت */}
                   <div className="today-editorial-info">
                     <h3>{event.title}</h3>
 
-                    {event.description && (
-                      <p>{event.description}</p>
-                    )}
+                    {event.description && <p>{event.description}</p>}
 
                     {event.duration && (
                       <div className="today-editorial-duration">
@@ -407,60 +391,44 @@ export default function HomePage() {
                   {/* تصویر */}
                   <div className="today-editorial-image">
                     {event.image ? (
-                      <img
-                        src={event.image}
-                        alt={event.title}
-                      />
+                      <img loading="lazy" decoding="async" src={event.image} alt={event.title} />
                     ) : (
                       <div className="today-editorial-image-placeholder">
                         <span>PADRA</span>
                         <strong>EVENT</strong>
                       </div>
                     )}
-
                     <div className="today-editorial-image-overlay"></div>
                   </div>
-
-                  {/* سانس‌ها */}
+    {/* سانس‌ها در سمت راست ایونت */}
                   <div className="today-editorial-schedule">
                     <div className="schedule-heading">
-                      <span>سانس‌های امروز</span>
+                      <span>سانس‌های قابل رزرو</span>
+                      <small>{new Intl.NumberFormat("fa-IR").format(slots.length)} سانس</small>
                     </div>
 
-                    {occurrences.length > 0 ? (
+                    {slots.length > 0 ? (
                       <div className="schedule-times">
-                        {occurrences.map((occurrence) => (
-                          <div
-                            key={occurrence.id}
-                            className="schedule-time"
+                        {slots.map((slot) => (
+                          <Link
+                            key={`${slot.date}-${slot.startTime}`}
+                            href={`/booking?eventId=${event.id}&date=${slot.date}&startTime=${encodeURIComponent(slot.startTime)}`}
+                            className="schedule-time schedule-time-link"
                           >
+                            <small>{new Intl.DateTimeFormat("fa-IR", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${slot.date}T00:00:00Z`))}</small>
                             <div className="schedule-time-main">
-                              <strong>
-                                {occurrence.startTime}
-                              </strong>
-
-                              <span>
-                                {occurrence.endTime}
-                              </span>
+                              <strong>{slot.startTime}</strong>
+                              <span>تا {slot.endTime}</span>
                             </div>
-
-                            {occurrence.price > 0 && (
-                              <small>
-                                {new Intl.NumberFormat("fa-IR").format(
-                                  occurrence.price
-                                )} تومان
-                              </small>
-                            )}
-                          </div>
+                            <small>{new Intl.NumberFormat("fa-IR").format(slot.price)} تومان · {new Intl.NumberFormat("fa-IR").format(slot.remaining)} ظرفیت</small>
+                          </Link>
                         ))}
                       </div>
                     ) : (
-                      <div className="schedule-empty">
-                        <span>—</span>
-                        <p>امروز بدون سانس</p>
-                      </div>
+                      <div className="schedule-empty"><span>—</span><p>در حال حاضر سانس آزادی ندارد</p></div>
                     )}
                   </div>
+                 
                 </article>
               );
             })}
@@ -496,12 +464,12 @@ export default function HomePage() {
             </p>
 
             <div className="cafe-actions">
-              <a href="menu" className="cafe-button cafe-button-primary">
+              <a href="/menu" className="cafe-button cafe-button-primary">
                 منوی کافه
                 <span>↗</span>
               </a>
 
-              <a href="#" className="cafe-button cafe-button-secondary">
+              <a href="tel:09386620999" className="cafe-button cafe-button-secondary">
                 رزرو میز
                 <span>↗</span>
               </a>
@@ -510,9 +478,9 @@ export default function HomePage() {
             {/* دو عکس کوچک منو */}
             <div className="cafe-menu-preview">
 
-              <a href="menu" className="cafe-menu-item">
+              <a href="/menu" className="cafe-menu-item">
                 <div className="cafe-menu-image">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src="/img/CafeMenu.gif"
                     alt="نوشیدنی کافه"
                   />
@@ -528,9 +496,9 @@ export default function HomePage() {
                 </div>
               </a>
 
-              <a href="#menu" className="cafe-menu-item">
+              <a href="/menu" className="cafe-menu-item">
                 <div className="cafe-menu-image">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src="/img/CafeMenu2.gif"
                     alt="دسر"
                   />
@@ -553,7 +521,7 @@ export default function HomePage() {
           {/* عکس بزرگ کافه */}
           <div className="cafe-visual">
 
-            <img
+            <img loading="lazy" decoding="async"
               src="/img/cafe.gif"
               alt="کافه پادرا"
             />
@@ -646,7 +614,7 @@ export default function HomePage() {
         <div className="events-collage">
           <div className="collage-card collage-main">
             {games[2]?.image ? (
-              <img src={games[2].image} alt="Birthday" />
+              <img loading="lazy" decoding="async" src={games[2].image} alt="Birthday" />
             ) : (
               <div className="collage-placeholder">
                 <span>BIRTHDAY</span>
@@ -663,7 +631,7 @@ export default function HomePage() {
 
           <div className="collage-card collage-small">
             {games[3]?.image ? (
-              <img src={games[3].image} alt="Group Event" />
+              <img loading="lazy" decoding="async" src={games[3].image} alt="Group Event" />
             ) : (
               <div className="collage-placeholder">
                 <span>EVENT</span>
@@ -720,7 +688,7 @@ export default function HomePage() {
 
             {/* عکس کوچک */}
             <div className="birthday-photo birthday-photo-small">
-              <img
+              <img loading="lazy" decoding="async"
                 src="/img/birthday2.gif"
                 alt="جشن تولد در پادرا"
               />
@@ -734,7 +702,7 @@ export default function HomePage() {
             {/* عکس اصلی */}
             <div className="birthday-photo birthday-photo-main">
 
-              <img
+              <img loading="lazy" decoding="async"
                 src="/img/birthday3.gif"
                 alt="تولد در پادرا پارک"
               />
@@ -756,7 +724,7 @@ export default function HomePage() {
 
             {/* عکس سوم */}
             <div className="birthday-photo birthday-photo-third">
-              <img
+              <img loading="lazy" decoding="async"
                 src="/img/birthday1.gif"
                 alt="جشن تولد پادرا"
               />
@@ -827,7 +795,7 @@ export default function HomePage() {
             </div>
 
             <a
-              href="#booking"
+              href="tel:09386620999"
               className="birthday-cta"
             >
               اطلاعات تولد
@@ -912,9 +880,13 @@ export default function HomePage() {
             {/* VISUAL */}
             <div className="about-visual">
 
-              <img
+              <img loading="lazy" decoding="async"
                 src="/img/about/padra-about.jpg"
                 alt="پادرا پارک"
+                onError={(e) => {
+                  // فایل تصویر هنوز در public/img/about قرار داده نشده است
+                  e.currentTarget.style.display = "none";
+                }}
               />
 
               <div className="about-visual-overlay"></div>

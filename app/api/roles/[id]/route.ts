@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { authorize, getPermissionCodes, isAdminRole } from "@/lib/auth";
 
 type Params = {
   params: Promise<{
@@ -15,14 +15,8 @@ export async function PUT(
   { params }: Params
 ) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "دسترسی غیرمجاز" },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize("roles.manage");
+    if (!auth.ok) return auth.response;
 
     const { id } = await params;
     const roleId = Number(id);
@@ -55,6 +49,14 @@ export async function PUT(
       );
     }
 
+    // نقش ADMIN همیشه به همه‌ی دسترسی‌ها دسترسی دارد و قابل ویرایش نیست
+    if (isAdminRole(role)) {
+      return NextResponse.json(
+        { error: "دسترسی‌های نقش مدیر سیستم قابل تغییر نیست" },
+        { status: 400 }
+      );
+    }
+
     const permissions = await prisma.permission.findMany({
       where: {
         id: {
@@ -63,6 +65,21 @@ export async function PUT(
         isActive: true,
       },
     });
+
+    // هیچ‌کس نمی‌تواند دسترسی‌ای را به نقشی بدهد که خودش ندارد
+    if (!isAdminRole(auth.user.role)) {
+      const mine = getPermissionCodes(auth.user.role);
+      const forbidden = permissions.filter(
+        (permission: { code: string }) => !mine.has(permission.code)
+      );
+
+      if (forbidden.length > 0) {
+        return NextResponse.json(
+          { error: "نمی‌توانید دسترسی‌ای را بدهید که خودتان ندارید" },
+          { status: 403 }
+        );
+      }
+    }
 
     await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {

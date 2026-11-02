@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 /**
  * GET
@@ -10,6 +11,9 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(request: Request) {
   try {
+    const auth = await authorize("events.view");
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
 
     const date = searchParams.get("date");
@@ -69,6 +73,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    const auth = await authorize("events.manage");
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const eventId = Number(body.eventId);

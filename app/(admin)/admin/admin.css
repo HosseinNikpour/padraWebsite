@@ -3,7 +3,7 @@
   display: flex;
   background: #f5f8fc;
   color: #172b4d;
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: inherit;
 }
 
 /* Sidebar */
@@ -216,60 +216,132 @@
   border-radius: 10px;
 }
 
+.admin-logout {
+  padding: 10px 16px;
+  border: 1px solid #ead4d4;
+  border-radius: 10px;
+  background: #fff;
+  color: #a05252;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-logout:hover {
+  background: #fdf5f5;
+}
+
 /* Mobile */
 
+.admin-menu-button,
+.admin-backdrop {
+  display: none;
+}
+
 @media (max-width: 800px) {
+  /* منوی کشویی: به‌جای ستون آیکون ۷۰ پیکسلی بدون برچسب */
   .admin-sidebar {
-    width: 70px;
+    width: min(280px, 82vw);
+    transform: translateX(100%);
+    visibility: hidden; /* وقتی بسته است با Tab هم فوکوس نشود */
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    box-shadow: none;
+    overflow-y: auto;
   }
 
-  .admin-logo {
-    padding: 0;
+  .admin-shell.admin-nav-open .admin-sidebar {
+    transform: none;
+    visibility: visible;
+    transition-delay: 0s;
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.25);
+  }
+
+  .admin-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(10, 20, 35, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .admin-shell.admin-nav-open .admin-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-menu-button {
+    display: inline-flex;
+    flex-direction: column;
     justify-content: center;
+    gap: 5px;
+    width: 42px;
+    height: 42px;
+    padding: 0 10px;
+    margin-left: 12px;
+    border: 1px solid #d8e4f0;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
   }
 
-  .admin-logo > div:not(.admin-logo-icon) {
-    display: none;
-  }
-
-  .admin-nav-item {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .admin-nav-item span {
-    font-size: 19px;
-  }
-
-  .admin-nav-item {
-    font-size: 0;
-  }
-
-  .admin-nav-title,
-  .admin-sidebar-footer {
-    display: none;
+  .admin-menu-button span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: #123e73;
   }
 
   .admin-main {
-    width: calc(100% - 70px);
-    margin-right: 70px;
+    width: 100%;
+    margin-right: 0;
   }
 
   .admin-topbar {
-    padding: 0 18px;
+    height: 68px;
+    padding: 0 14px;
+    gap: 8px;
+  }
+
+  .admin-topbar-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-topbar-title,
+  .admin-topbar-subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-topbar-subtitle {
+    font-size: 12px;
   }
 
   .admin-content {
-    padding: 20px 15px;
+    padding: 16px 12px;
   }
 
   .admin-view-menu {
     font-size: 0;
     padding: 10px;
+    flex-shrink: 0;
   }
 
   .admin-view-menu::after {
     content: "↗";
     font-size: 16px;
   }
+}
+
+.admin-nav-icon {
+  width: 22px;
+  height: 18px;
+  flex: none;
 }

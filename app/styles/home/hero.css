@@ -1,0 +1,290 @@
+/* صفحه اصلی — بخش Hero (#home) */
+
+.hero-content {
+  max-width: 700px;
+}
+
+.hero-visual {
+  min-height: 520px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .hero-visual {
+      min-height: 400px;
+    }
+}
+
+@media (max-width: 600px) {
+  .hero-visual {
+      display: none;
+    }
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+.hero-section {
+  min-height: 900px;
+  height: calc(100vh - 0px);
+  max-height: 1050px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #d7d9dc;
+  overflow: hidden;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.38;
+  background-image:
+    linear-gradient(rgba(37, 40, 45, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 40, 45, 0.08) 1px, transparent 1px);
+  background-size: 65px 65px;
+}
+
+.hero-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 45%,
+      rgba(23, 105, 255, 0.06) 45.1%,
+      rgba(23, 105, 255, 0.06) 45.4%,
+      transparent 45.5%
+    );
+}
+
+.hero-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+}
+
+.hero-content {
+  position: relative;
+  z-index: 5;
+  width: 47%;
+  margin-right: 8%;
+  padding-top: 50px;
+}
+
+.hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  direction: ltr;
+  color: #4f545a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.hero-kicker-line {
+  width: 42px;
+  height: 2px;
+  background: var(--blue);
+}
+
+.hero-content h1 {
+  margin: 0;
+  color: var(--dark);
+  font-size: clamp(58px, 7vw, 110px);
+  line-height: 0.98;
+  font-weight: 500;
+  letter-spacing: -0.065em;
+}
+
+.hero-content h1 strong {
+  font-weight: 900;
+}
+
+.hero-content p {
+  max-width: 470px;
+  margin: 34px 0 0;
+  color: #5e6369;
+  font-size: 17px;
+  line-height: 2;
+}
+
+.hero-visual {
+  position: absolute;
+  z-index: 3;
+  top: 9%;
+  left: 7%;
+  width: 45%;
+  height: 76%;
+  overflow: hidden;
+  background: #bfc2c5;
+  transform: rotate(1.5deg);
+  box-shadow: 28px 28px 0 rgba(37, 40, 45, 0.07);
+}
+
+.hero-visual:hover .hero-image {
+  transform: scale(1.04);
+}
+
+.hero-image-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.04),
+      transparent 45%,
+      rgba(0, 0, 0, 0.65)
+    );
+}
+
+.hero-image-caption {
+  position: absolute;
+  right: 30px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #fff;
+}
+
+.hero-image-caption span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  direction: ltr;
+}
+
+.hero-image-caption strong {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.hero-corner {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+}
+
+.hero-corner.top-left {
+  top: 22px;
+  left: 22px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.hero-corner.bottom-right {
+  right: 22px;
+  bottom: 22px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.hero-side-label {
+  position: absolute;
+  z-index: 5;
+  top: 42%;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transform: rotate(-90deg) translateX(50%);
+  transform-origin: right center;
+  color: #777c81;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  direction: ltr;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 1100px) {
+  .hero-section {
+      min-height: 800px;
+    }
+
+  .hero-content {
+      width: 50%;
+      margin-right: 6%;
+    }
+
+  .hero-visual {
+      left: 5%;
+      width: 48%;
+    }
+}
+
+@media (max-width: 800px) {
+  .hero-section {
+      min-height: 900px;
+      height: auto;
+      display: block;
+      padding: 110px 20px 100px;
+    }
+
+  .hero-content {
+      width: 100%;
+      margin: 0;
+      padding-top: 20px;
+    }
+
+  .hero-content h1 {
+      font-size: clamp(54px, 15vw, 82px);
+    }
+
+  .hero-content p {
+      max-width: 360px;
+      font-size: 14px;
+    }
+
+  .hero-visual {
+      position: relative;
+      top: auto;
+      left: auto;
+      width: calc(100% - 20px);
+      height: 390px;
+      margin: 65px 0 0 auto;
+      transform: rotate(1deg);
+    }
+
+  .hero-side-label {
+      display: none;
+    }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+      min-height: 850px;
+    }
+
+  .hero-visual {
+      height: 320px;
+    }
+
+  .hero-image-caption strong {
+      font-size: 22px;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE FIXES — خوانایی متن‌های ریز در موبایل
+========================================================= */
+@media (max-width: 600px) {
+  .hero-side-label span,
+  .hero-kicker span,
+  .hero-image-caption span {
+    font-size: 11px;
+  }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 import { useEffect, useState } from "react";
 import "./menuItems.css"
 type Category = {
@@ -20,6 +21,7 @@ type MenuItem = {
 };
 
 export default function MenuItemsPage() {
+    const { confirm: confirmDialog, toast } = useFeedback();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +67,7 @@ export default function MenuItemsPage() {
       setCategories(categoriesData);
     } catch (error) {
       console.error(error);
-      alert("خطا در دریافت اطلاعات");
+      toast("خطا در دریافت اطلاعات");
     } finally {
       setLoading(false);
     }
@@ -100,17 +102,17 @@ export default function MenuItemsPage() {
 
   async function saveItem() {
     if (!name.trim()) {
-      alert("نام آیتم را وارد کنید");
+      toast("نام آیتم را وارد کنید");
       return;
     }
 
     if (!categoryId) {
-      alert("دسته‌بندی را انتخاب کنید");
+      toast("دسته‌بندی را انتخاب کنید");
       return;
     }
 
     if (!price || Number(price) < 0) {
-      alert("قیمت معتبر وارد کنید");
+      toast("قیمت معتبر وارد کنید");
       return;
     }
 
@@ -153,7 +155,7 @@ export default function MenuItemsPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در ذخیره آیتم"
@@ -164,7 +166,7 @@ export default function MenuItemsPage() {
   }
 
   async function deleteItem(item: MenuItem) {
-    const confirmed = confirm(
+    const confirmed = await confirmDialog(
       `آیا از حذف «${item.name}» مطمئن هستید؟`
     );
 
@@ -190,7 +192,7 @@ export default function MenuItemsPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در حذف آیتم"
@@ -199,12 +201,12 @@ export default function MenuItemsPage() {
   }
   async function uploadImage(file: File) {
     if (!file.type.startsWith("image/")) {
-      alert("لطفاً یک فایل تصویری انتخاب کنید");
+      toast("لطفاً یک فایل تصویری انتخاب کنید");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("حجم تصویر نباید بیشتر از ۵ مگابایت باشد");
+      toast("حجم تصویر نباید بیشتر از ۵ مگابایت باشد");
       return;
     }
 
@@ -231,7 +233,7 @@ export default function MenuItemsPage() {
     } catch (error) {
       console.error(error);
 
-      alert(
+      toast(
         error instanceof Error
           ? error.message
           : "خطا در آپلود تصویر"
@@ -415,7 +417,7 @@ export default function MenuItemsPage() {
             <div className="image-upload-box">
               {image ? (
                 <div className="image-preview">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={image}
                     alt={name || "تصویر آیتم"}
                   />
@@ -639,7 +641,7 @@ export default function MenuItemsPage() {
 
                 <div className="product-cell">
                   {item.image ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={item.image}
                       alt={item.name}
                       className="product-image"

@@ -1,0 +1,337 @@
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  .hero-section {
+    min-height: 800px;
+  }
+
+  .hero-content {
+    width: 50%;
+    margin-right: 6%;
+  }
+
+  .hero-visual {
+    left: 5%;
+    width: 48%;
+  }
+
+  .games-layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 420px 330px 330px;
+  }
+
+  .game-card-featured {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+
+  .game-card-2,
+  .game-card-3,
+  .game-card-4,
+  .game-card-5 {
+    grid-column: span 1;
+  }
+
+  .experience-intro {
+    grid-template-columns: 70px 1fr;
+  }
+
+  .experience-intro-text {
+    grid-column: 2;
+    max-width: 500px;
+  }
+}
+
+
+@media (max-width: 800px) {
+  .hero-section {
+    min-height: 900px;
+    height: auto;
+    display: block;
+    padding: 110px 20px 100px;
+  }
+
+  .hero-content {
+    width: 100%;
+    margin: 0;
+    padding-top: 20px;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(54px, 15vw, 82px);
+  }
+
+  .hero-content p {
+    max-width: 360px;
+    font-size: 14px;
+  }
+
+  .hero-visual {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: calc(100% - 20px);
+    height: 390px;
+    margin: 65px 0 0 auto;
+    transform: rotate(1deg);
+  }
+
+  .hero-number {
+    top: 55px;
+    left: 25px;
+  }
+
+  .hero-number span {
+    font-size: 42px;
+  }
+
+  .hero-side-label {
+    display: none;
+  }
+
+  .hero-bottom {
+    right: 20px;
+    bottom: 25px;
+    left: 20px;
+  }
+
+  .hero-bottom > div:nth-child(2),
+  .hero-bottom > div:nth-child(3) {
+    display: none;
+  }
+
+  .hero-scroll {
+    margin-right: auto;
+  }
+
+  .experience-intro {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 90px 25px;
+  }
+
+  .experience-intro .section-number {
+    display: none;
+  }
+
+  .experience-intro-text {
+    grid-column: auto;
+  }
+
+  .experience-intro h2,
+  .section-heading h2,
+  .today-header h2 {
+    font-size: 50px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+  }
+
+  .section-index {
+    font-size: 48px;
+  }
+
+  .games-section {
+    padding: 90px 20px;
+  }
+
+  .games-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, 390px);
+  }
+
+  .game-card-featured {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .today-section {
+    padding: 90px 20px;
+  }
+
+  .today-header {
+    display: block;
+  }
+
+  .today-date {
+    align-items: flex-start;
+    margin-top: 25px;
+  }
+
+  .today-board {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .today-feature {
+    min-height: 430px;
+  }
+
+  .today-event {
+    min-height: 90px;
+  }
+
+  .padra-experience {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .padra-experience-image {
+    min-height: 450px;
+  }
+
+  .padra-experience-content {
+    padding: 80px 25px;
+  }
+
+  .padra-experience-content h2 {
+    font-size: 52px;
+  }
+
+  .events-section {
+    display: flex;
+    flex-direction: column;
+    padding: 90px 25px;
+  }
+
+  .events-title {
+    width: 100%;
+  }
+
+  .events-collage {
+    width: 100%;
+    min-height: 510px;
+  }
+
+  .cafe-section {
+    padding: 80px 20px;
+  }
+
+  .cafe-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cafe-content {
+    padding: 70px 30px;
+  }
+
+  .cafe-visual {
+    min-height: 430px;
+  }
+
+  .final-cta {
+    min-height: 600px;
+  }
+
+  .final-cta h2 {
+    font-size: clamp(65px, 18vw, 100px);
+  }
+
+  .final-cta-number {
+    font-size: 55px;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .hero-section {
+    min-height: 850px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary-action,
+  .secondary-action {
+    justify-content: center;
+  }
+
+  .hero-visual {
+    height: 320px;
+  }
+
+  .hero-image-caption strong {
+    font-size: 22px;
+  }
+
+  .experience-intro h2,
+  .section-heading h2,
+  .today-header h2,
+  .events-title h2,
+  .cafe-content h2,
+  .padra-experience-content h2 {
+    font-size: 43px;
+  }
+
+  .games-layout {
+    grid-template-rows: repeat(5, 350px);
+  }
+
+  .game-number {
+    font-size: 43px;
+  }
+
+  .game-title-row h3 {
+    font-size: 23px;
+  }
+
+  .game-meta {
+    gap: 12px;
+  }
+
+  .today-feature {
+    min-height: 380px;
+  }
+
+  .today-feature-content h3 {
+    font-size: 28px;
+  }
+
+  .experience-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .experience-stats div {
+    border-left: 0;
+    border-bottom: 1px solid #b9bdc1;
+  }
+
+  .experience-stats div:last-child {
+    border-bottom: 0;
+  }
+
+  .events-collage {
+    min-height: 430px;
+  }
+
+  .collage-main {
+    width: 70%;
+    height: 70%;
+  }
+
+  .collage-small {
+    width: 55%;
+    height: 45%;
+  }
+
+  .collage-note {
+    right: 0;
+    bottom: 25%;
+  }
+
+  .footer-contact,
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+
+

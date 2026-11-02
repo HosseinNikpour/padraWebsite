@@ -1,7 +1,16 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { validatePassword } from "@/lib/password";
+
+function safeEqual(a: string, b: string) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 const roles = [
   {
@@ -96,6 +105,11 @@ const permissions = [
     code: "bookings.manage",
     description: "مدیریت رزروها",
   },
+  {
+    name: "ثبت رزرو حضوری",
+    code: "bookings.create",
+    description: "ثبت رزرو برای مشتریان حضوری (بدون پرداخت آنلاین)",
+  },
 
   {
     name: "مشاهده کاربران",
@@ -118,7 +132,64 @@ const permissions = [
     code: "roles.manage",
     description: "مدیریت نقش‌ها و دسترسی‌ها",
   },
+
+  // --- پرسنل: مرخصی، شیفت، حضور و غیاب ---
+  {
+    name: "تأیید مرخصی (سوپروایزر)",
+    code: "leave.approve.supervisor",
+    description: "تأیید مرحله‌ی اول درخواست مرخصی پرسنل",
+  },
+  {
+    name: "تأیید نهایی مرخصی (مدیر)",
+    code: "leave.approve.final",
+    description: "تأیید نهایی درخواست مرخصی و لغو مرخصی‌های تأییدشده",
+  },
+  {
+    name: "مشاهده همه‌ی مرخصی‌ها",
+    code: "leave.viewAll",
+    description: "مشاهده مرخصی‌های همه‌ی پرسنل",
+  },
+  {
+    name: "مشاهده شیفت همه‌ی پرسنل",
+    code: "shifts.view",
+    description: "مشاهده تقویم شیفت و شیفت روزانه‌ی همه‌ی پرسنل",
+  },
+  {
+    name: "مدیریت شیفت‌ها",
+    code: "shifts.manage",
+    description: "ثبت و ویرایش شیفت پرسنل",
+  },
+  {
+    name: "تأیید جابه‌جایی شیفت",
+    code: "shifts.swap.approve",
+    description: "تأیید یا رد درخواست جابه‌جایی شیفت",
+  },
+  {
+    name: "مشاهده حضور و غیاب همه",
+    code: "attendance.view",
+    description: "مشاهده کارکرد و حضور و غیاب همه‌ی پرسنل",
+  },
+  {
+    name: "مدیریت دستگاه حضور و غیاب",
+    code: "attendance.manage",
+    description: "ثبت دستگاه، ورود فایل تردد و تطبیق کد پرسنل",
+  },
 ];
+
+/**
+ * دسترسی‌های پیش‌فرض نقش‌ها برای بخش پرسنل (فقط اضافه می‌شود؛ چیزی حذف نمی‌شود).
+ * بعداً از صفحه‌ی «نقش‌ها و دسترسی‌ها» قابل تغییر است.
+ */
+const defaultRolePermissions: Record<string, string[]> = {
+  MANAGER: [
+    "leave.approve.final", "leave.viewAll", "shifts.view", "shifts.manage",
+    "shifts.swap.approve", "attendance.view", "attendance.manage",
+  ],
+  SUPERVISOR: [
+    "leave.approve.supervisor", "leave.viewAll", "shifts.view", "shifts.manage",
+    "shifts.swap.approve", "attendance.view",
+  ],
+};
 
 export async function POST(request: Request) {
   try {
@@ -126,7 +197,8 @@ export async function POST(request: Request) {
 
     if (
       !process.env.AUTH_SETUP_KEY ||
-      setupKey !== process.env.AUTH_SETUP_KEY
+      !setupKey ||
+      !safeEqual(setupKey, process.env.AUTH_SETUP_KEY)
     ) {
       return NextResponse.json(
         {
@@ -135,6 +207,19 @@ export async function POST(request: Request) {
         {
           status: 403,
         }
+      );
+    }
+
+    // راه‌اندازی اولیه فقط یک‌بار: بعد از ساخته شدن اولین مدیر سیستم این مسیر بسته می‌شود.
+    // (همگام‌سازی دسترسی‌های جدید از «نقش‌ها ← همگام‌سازی» در پنل انجام می‌شود.)
+    const adminCount = await prisma.user.count({
+      where: { role: { code: "ADMIN" } },
+    });
+
+    if (adminCount > 0) {
+      return NextResponse.json(
+        { error: "راه‌اندازی اولیه قبلاً انجام شده است. AUTH_SETUP_KEY را از تنظیمات محیطی حذف کنید." },
+        { status: 409 }
       );
     }
 
@@ -218,6 +303,28 @@ export async function POST(request: Request) {
     }
 
     /*
+     * 3b. Default HR permissions for MANAGER / SUPERVISOR (additive, idempotent)
+     */
+
+    for (const [roleCode, codes] of Object.entries(defaultRolePermissions)) {
+      const roleId = roleMap.get(roleCode);
+
+      if (!roleId) continue;
+
+      for (const code of codes) {
+        const permissionId = permissionMap.get(code);
+
+        if (!permissionId) continue;
+
+        await prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId, permissionId } },
+          update: {},
+          create: { roleId, permissionId },
+        });
+      }
+    }
+
+    /*
      * 4. Create admin user only if it doesn't exist
      */
 
@@ -239,11 +346,12 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 8) {
+    const passwordError = validatePassword(password, { username });
+
+    if (passwordError) {
       return NextResponse.json(
         {
-          error:
-            "رمز عبور باید حداقل ۸ کاراکتر باشد",
+          error: passwordError,
         },
         {
           status: 400,

@@ -2,26 +2,15 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import localFont from "next/font/local";
+import { FeedbackProvider } from "@/components/ui/Feedback";
 
 const vazirmatn = localFont({
-  src: [
-    {
-      path: "../public/fonts/Vazirmatn/Vazirmatn-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Vazirmatn/Vazirmatn-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Vazirmatn/Vazirmatn-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
+  // یک فونت متغیر که همه‌ی وزن‌های ۱۰۰ تا ۹۰۰ را پوشش می‌دهد
+  src: "../public/fonts/Vazirmatn/Vazirmatn-Variable.woff2",
+  weight: "100 900",
+  style: "normal",
   variable: "--font-vazirmatn",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -36,7 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fa" dir="rtl">
-      <body className={vazirmatn.variable}>{children}</body>
+      <body className={vazirmatn.variable}>
+        <FeedbackProvider>{children}</FeedbackProvider>
+      </body>
     </html>
   );
 }

@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorize("events.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const eventId = Number(id);
 
@@ -116,6 +120,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorize("events.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const eventId = Number(id);
 
@@ -150,6 +157,21 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("EVENTS DELETE ERROR:", error);
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "این ایونت رزرو ثبت‌شده دارد و حذف نمی‌شود. به‌جای حذف، آن را غیرفعال کنید.",
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json(
       { error: "خطا در حذف ایونت" },

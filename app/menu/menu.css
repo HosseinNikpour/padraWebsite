@@ -1,11 +1,9 @@
 
-@import url("https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap");
-
 .menu-page {
   min-height: 100vh;
   background: #f7f6f3;
   color: #17212b;
-  font-family: "Vazirmatn", sans-serif;
+  font-family: var(--font-vazirmatn), "Vazirmatn", sans-serif;
 }
 
 /* =========================

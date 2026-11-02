@@ -1,25 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, hasPermission } from "@/lib/auth";
+import StaffInbox from "@/components/staff/StaffInbox";
 
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/admin/login");
+    redirect("/account?next=/admin");
   }
-
- const permissions = new Set(
-  user.role.permissions.map(
-    (item: { permission: { code: string } }) => item.permission.code
-  )
-);
-
-  const hasPermission = (permission: string) => {
-    return permissions.has(permission);
-  };
+  const can = (permission: string) => hasPermission(user, permission);
 
   return (
     <div>
@@ -35,6 +27,8 @@ export default async function AdminPage() {
         </div>
       </div>
 
+      <StaffInbox />
+
       <div
         style={{
           display: "grid",
@@ -45,8 +39,15 @@ export default async function AdminPage() {
         }}
       >
 
+        <AdminCard icon="✓" title="کارتابل و تسک‌ها" description="مشاهده تسک‌ها، پیگیری انجام و ایجاد تسک برای پرسنل" href="/admin/tasks" />
+
+        {/* Staff requests */}
+        {(can("leave.approve.supervisor") || can("leave.approve.final") || can("shifts.swap.approve")) && (
+          <AdminCard icon="▤" title="درخواست‌های در انتظار" description="بررسی و تأیید مرخصی‌ها و تغییر شیفت‌ها" href="/admin/leaves" />
+        )}
+
         {/* Games */}
-        {hasPermission("games.view") && (
+        {can("games.view") && (
           <AdminCard
             icon="◈"
             title="بازی‌ها"
@@ -56,17 +57,17 @@ export default async function AdminPage() {
         )}
 
         {/* Schedules */}
-        {hasPermission("schedules.view") && (
+        {can("schedules.view") && (
           <AdminCard
             icon="◷"
-            title="زمان‌بندی بازی‌ها"
-            description="مدیریت برنامه و سانس‌های بازی"
+            title="زمان‌بندی و نوبت‌ها"
+            description="برنامه‌ی هفتگی و نوبت‌های بازی‌ها و ایونت‌ها"
             href="/admin/schedules"
           />
         )}
 
         {/* Bookings */}
-        {hasPermission("bookings.view") && (
+        {can("bookings.view") && (
           <AdminCard
             icon="▣"
             title="رزروها"
@@ -76,7 +77,7 @@ export default async function AdminPage() {
         )}
 
         {/* Events */}
-        {hasPermission("events.view") && (
+        {can("events.view") && (
           <AdminCard
             icon="◆"
             title="رویدادها"
@@ -86,8 +87,8 @@ export default async function AdminPage() {
         )}
 
         {/* Menu Categories */}
-        {hasPermission("menu.view") &&
-          hasPermission("menu.manage") && (
+        {can("menu.view") &&
+          can("menu.manage") && (
             <AdminCard
               icon="▦"
               title="دسته‌بندی‌های منو"
@@ -97,8 +98,8 @@ export default async function AdminPage() {
           )}
 
         {/* Menu Items */}
-        {hasPermission("menu.view") &&
-          hasPermission("menu.manage") && (
+        {can("menu.view") &&
+          can("menu.manage") && (
             <AdminCard
               icon="☰"
               title="آیتم‌های منو"
@@ -108,7 +109,7 @@ export default async function AdminPage() {
           )}
 
         {/* Users */}
-        {hasPermission("users.view") && (
+        {can("users.view") && (
           <AdminCard
             icon="♙"
             title="کاربران"
@@ -118,7 +119,7 @@ export default async function AdminPage() {
         )}
 
         {/* Roles */}
-        {hasPermission("roles.view") && (
+        {can("roles.view") && (
           <AdminCard
             icon="⚙"
             title="نقش‌ها و دسترسی‌ها"

@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/auth";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorize("schedules.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
 
     const scheduleId = Number(id);
@@ -79,6 +83,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await authorize("schedules.manage");
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
 
     const scheduleId = Number(id);
