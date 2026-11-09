@@ -13,11 +13,23 @@ export const SHIFT_META: Record<
   AM: { label: "AM", title: "صبح", start: "10:00", end: "16:45", color: "#1b8a4b", bg: "#def5e8" },
   PM: { label: "PM", title: "عصر", start: "16:45", end: "23:30", color: "#9a7400", bg: "#fff3c4" },
   LEAVE: { label: "مرخصی", title: "مرخصی", color: "#d9650b", bg: "#ffe6d0" },
-  ABSENT: { label: "غیبت", title: "غیبت ثبت‌شده", color: "#b42318", bg: "#fee4e2" },
+  ABSENT: { label: "OFF", title: "OFF", color: "#b42318", bg: "#fee4e2" },
 };
 
 export function isShiftType(value: unknown): value is ShiftType {
-  return typeof value === "string" && (SHIFT_TYPES as string[]).includes(value);
+  return typeof value === "string" && (TEAM_SHIFT_TYPES as string[]).includes(value);
+}
+
+/** مدت شیفت به دقیقه (مرخصی و OFF صفر است) */
+export function shiftMinutes(type: ShiftType | null | undefined) {
+  const m = type ? SHIFT_META[type] : null;
+
+  if (!m?.start || !m.end) return 0;
+
+  const [sh, sm] = m.start.split(":").map(Number);
+  const [eh, em] = m.end.split(":").map(Number);
+
+  return eh * 60 + em - (sh * 60 + sm);
 }
 
 export function shiftRangeText(type: ShiftType) {

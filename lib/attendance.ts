@@ -1,4 +1,4 @@
-import { SHIFT_META, type ShiftType } from "@/lib/shifts";
+import { SHIFT_META, shiftMinutes, type ShiftType } from "@/lib/shifts";
 import { parseAnyDate } from "@/lib/jalali";
 
 /* ------------------------------------------------------------------ */
@@ -260,15 +260,32 @@ export type MonthSummary = {
   workedMinutes: number;
   overtimeMinutes: number;
   scheduledDays: number;
+  /** تعداد شیفت‌های ثبت‌شده در ماه (طبق برنامه‌ی شیفت) */
+  shiftFull: number;
+  shiftAm: number;
+  shiftPm: number;
+  shiftOff: number;
+  shiftLeave: number;
+  /** جمع ساعات شیفت‌های ثبت‌شده (دقیقه) */
+  scheduledMinutes: number;
 };
 
 export function summarize(days: DayResult[]): MonthSummary {
   const s: MonthSummary = {
     presentDays: 0, absentDays: 0, leaveDays: 0, incompleteDays: 0, lateDays: 0,
     lateMinutes: 0, earlyLeaveMinutes: 0, workedMinutes: 0, overtimeMinutes: 0, scheduledDays: 0,
+    shiftFull: 0, shiftAm: 0, shiftPm: 0, shiftOff: 0, shiftLeave: 0, scheduledMinutes: 0,
   };
 
   for (const d of days) {
+    if (d.shift === "FULL") s.shiftFull++;
+    if (d.shift === "AM") s.shiftAm++;
+    if (d.shift === "PM") s.shiftPm++;
+    if (d.shift === "ABSENT") s.shiftOff++;
+    if (d.shift === "LEAVE") s.shiftLeave++;
+
+    s.scheduledMinutes += shiftMinutes(d.shift);
+
     if (d.shift && d.shift !== "LEAVE" && d.status !== "FUTURE") s.scheduledDays++;
     if (d.status === "PRESENT" || d.status === "UNSCHEDULED") s.presentDays++;
     if (d.status === "ABSENT") s.absentDays++;

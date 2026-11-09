@@ -128,14 +128,19 @@ export default function AttendancePage() {
                 <thead>
                   <tr>
                     <th>پرسنل</th>
-                    <th>کد دستگاه</th>
-                    <th>روز حضور</th>
+                    <th>سمت </th>
+                    <th>AM</th>
+                    <th>PM</th>
+                    <th>Full</th>
+                    <th>OFF</th>
+                    <th>جمع ساعات شیفت</th>
+                    {/* <th>روز حضور</th>
                     <th>غیبت</th>
                     <th>مرخصی</th>
                     <th>تأخیر (روز / ساعت)</th>
                     <th>کارکرد</th>
                     <th>اضافه‌کار</th>
-                    <th>ناقص</th>
+                    <th>ناقص</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -146,14 +151,19 @@ export default function AttendancePage() {
                           {r.user.name}
                         </button>
                       </td>
-                      <td dir="ltr">{r.user.deviceCode ?? <span className="st-badge st-badge--pending">ثبت نشده</span>}</td>
-                      <td>{fa(r.summary.presentDays)}</td>
+                      <td >{r.user.role }</td>
+                      <td>{r.summary.shiftAm ? fa(r.summary.shiftAm) : "—"}</td>
+                      <td>{r.summary.shiftPm ? fa(r.summary.shiftPm) : "—"}</td>
+                      <td>{r.summary.shiftFull ? fa(r.summary.shiftFull) : "—"}</td>
+                      <td>{r.summary.shiftOff ? fa(r.summary.shiftOff) : "—"}</td>
+                      <td><b>{mins(r.summary.scheduledMinutes)}</b></td>
+                      {/* <td>{fa(r.summary.presentDays)}</td>
                       <td>{r.summary.absentDays ? <span className="st-badge st-badge--bad">{fa(r.summary.absentDays)}</span> : "—"}</td>
                       <td>{fa(r.summary.leaveDays)}</td>
                       <td>{r.summary.lateDays ? `${fa(r.summary.lateDays)} / ${mins(r.summary.lateMinutes)}` : "—"}</td>
                       <td>{mins(r.summary.workedMinutes)}</td>
                       <td>{mins(r.summary.overtimeMinutes)}</td>
-                      <td>{r.summary.incompleteDays ? fa(r.summary.incompleteDays) : "—"}</td>
+                      <td>{r.summary.incompleteDays ? fa(r.summary.incompleteDays) : "—"}</td> */}
                     </tr>
                   ))}
                 </tbody>
@@ -168,6 +178,11 @@ export default function AttendancePage() {
         >
           {s && (
             <div className="st-legend" style={{ gap: "8px 22px" }}>
+              <span>AM: <b>{fa(s.shiftAm)}</b></span>
+              <span>PM: <b>{fa(s.shiftPm)}</b></span>
+              <span>Full: <b>{fa(s.shiftFull)}</b></span>
+              <span>OFF: <b>{fa(s.shiftOff)}</b></span>
+              <span>جمع ساعات شیفت: <b>{mins(s.scheduledMinutes)}</b></span>
               <span>روز حضور: <b>{fa(s.presentDays)}</b></span>
               <span>غیبت: <b>{fa(s.absentDays)}</b></span>
               <span>مرخصی: <b>{fa(s.leaveDays)}</b></span>
@@ -194,7 +209,8 @@ export default function AttendancePage() {
               </thead>
               <tbody>
                 {(detail.days ?? []).map((d) => {
-                  const [label, cls] = STATUS[d.status] ?? [d.status, ""];
+                  const [baseLabel, cls] = STATUS[d.status] ?? [d.status, ""];
+                  const label = d.status === "ABSENT" && d.shift === "ABSENT" ? "OFF" : baseLabel;
 
                   return (
                     <tr key={d.date}>

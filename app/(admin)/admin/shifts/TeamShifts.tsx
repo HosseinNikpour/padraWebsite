@@ -27,6 +27,8 @@ export default function TeamShifts() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [editor, setEditor] = useState<{ staff: Staff; date: string } | null>(null);
+  const [copyInfo, setCopyInfo] = useState<{ sourceCount: number; targetCount: number } | null>(null);
+  const [notice, setNotice] = useState("");
 
   const j = toJalali(anchor);
 
@@ -65,6 +67,8 @@ export default function TeamShifts() {
   }, [load]);
 
   function move(step: number) {
+    setNotice("");
+
     if (view === "day") return setAnchor(addDaysStr(anchor, step));
     if (view === "week") return setAnchor(addDaysStr(anchor, step * 7));
 
@@ -106,6 +110,55 @@ export default function TeamShifts() {
     }
   }
 
+  async function copyRequest(mode: "preview" | "fill" | "replace") {
+    const r = await fetch("/api/shifts/copy-week", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: range.start, mode }),
+    });
+
+    const d = await r.json();
+
+    if (!r.ok) throw new Error(d.error || "خطا در کپی شیفت‌ها");
+
+    return d;
+  }
+
+  async function openCopy() {
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const d = await copyRequest("preview");
+
+      if (d.sourceCount === 0) throw new Error("برای هفته‌ی قبل شیفتی ثبت نشده است");
+
+      setCopyInfo({ sourceCount: d.sourceCount, targetCount: d.targetCount });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function doCopy(mode: "fill" | "replace") {
+    setSaving(true);
+    setError("");
+
+    try {
+      const d = await copyRequest(mode);
+
+      setCopyInfo(null);
+      setNotice(`${fa(d.copied)} شیفت از هفته‌ی قبل کپی شد${d.skipped ? ` (${fa(d.skipped)} خانه‌ی پرشده حفظ شد)` : ""}.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const visibleStaff = staff.filter((s) => !search.trim() || s.name.includes(search.trim()));
   const title =
     view === "month"
@@ -129,6 +182,7 @@ export default function TeamShifts() {
       }
     >
       {error && <div className="st-alert st-alert--error" role="alert">{error}</div>}
+      {notice && <div className="st-alert st-alert--ok" role="status">{notice}</div>}
       {edit && <div className="st-alert st-alert--ok">حالت ویرایش: روی هر خانه بزنید تا شیفت آن را تعیین کنید. مرخصی تأییدشده همیشه روی شیفت اولویت دارد.</div>}
 
       <div className="st-toolbar">
@@ -140,6 +194,11 @@ export default function TeamShifts() {
         </div>
 
         <div className="st-actions">
+          {canManage && view === "week" && (
+            <button type="button" className="st-btn st-btn--ghost st-btn--small" disabled={saving} onClick={() => void openCopy()}>
+              کپی از هفته‌ی قبل
+            </button>
+          )}
           {(["day", "week", "month"] as View[]).map((v) => (
             <button key={v} type="button" className={`st-btn st-btn--small ${view === v ? "" : "st-btn--ghost"}`} onClick={() => setView(v)}>
               {v === "day" ? "روزانه" : v === "week" ? "هفتگی" : "ماهانه"}
@@ -257,6 +316,39 @@ export default function TeamShifts() {
             </table>
           </div>
         </>
+      )}
+
+      {copyInfo && (
+        <div className="sh-editor-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setCopyInfo(null); }}>
+          <div className="sh-editor" role="dialog" aria-modal="true">
+            <h3>کپی از هفته‌ی قبل</h3>
+            <p>
+              {fa(copyInfo.sourceCount)} شیفت از هفته‌ی قبل به {title} کپی می‌شود.
+              {copyInfo.targetCount > 0 && ` در این هفته ${fa(copyInfo.targetCount)} شیفت از قبل ثبت شده است.`}
+            </p>
+
+            <div className="sh-editor__options">
+              {copyInfo.targetCount > 0 ? (
+                <>
+                  <button type="button" disabled={saving} style={{ background: "#e1efff", color: "#1d6fd1", borderColor: "#1d6fd1" }} onClick={() => void doCopy("fill")}>
+                    فقط خانه‌های خالی
+                  </button>
+                  <button type="button" disabled={saving} style={{ background: "#fee4e2", color: "#b42318", borderColor: "#b42318" }} onClick={() => void doCopy("replace")}>
+                    جایگزینی کامل
+                  </button>
+                </>
+              ) : (
+                <button type="button" disabled={saving} style={{ background: "#def5e8", color: "#1b8a4b", borderColor: "#1b8a4b", gridColumn: "1 / -1" }} onClick={() => void doCopy("fill")}>
+                  کپی شیفت‌ها
+                </button>
+              )}
+
+              <button type="button" className="st-btn st-btn--ghost" style={{ gridColumn: "1 / -1" }} onClick={() => setCopyInfo(null)}>
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {editor && (
